@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: SlotManager.uc,v 1.5 2004/05/25 20:17:21 elmuerte Exp $ -->
+	<!-- $Id: SlotManager.uc,v 1.6 2004/06/05 09:02:23 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManager extends SlotManagerBase config;
 
@@ -110,11 +110,13 @@ function bool IsReserved(string Options, string Address, string PlayerID, option
 	{
 		switch (Slots[i].type)
 		{
-			case ST_IP:			tmp = Address; break;
+			case ST_IP:			tmp = Address;
+								if (InStr(tmp, ":") > -1) tmp = Left(tmp, InStr(tmp, ":")); // strip port
+								break;
 			case ST_Hash:		tmp = PlayerID;	break;
-			case ST_Nick:		tmp = Level.Game.ParseOption(Options, "name");
-			case ST_Password:	tmp = Level.Game.ParseOption(Options, "password");
-			case ST_Options:	tmp = Options;
+			case ST_Nick:		tmp = Level.Game.ParseOption(Options, "name"); break;
+			case ST_Password:	tmp = Level.Game.ParseOption(Options, "password"); break;
+			case ST_Options:	tmp = Options; break;
 		}
 		if (class'wString'.static.MaskedCompare(tmp, Slots[i].data))
 		{
