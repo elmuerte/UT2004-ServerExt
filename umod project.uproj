@@ -8,6 +8,7 @@ System\LibHTTP2.u
 System\ServerExt.u
 System\ServerExt.int
 System\ServerExt.ucl
+System\wUtils105.u
 System\RSS.ini.example
 Web\ServerAdmin\rssfeeds.htm
 Web\ServerAdmin\rssfeed_edit.inc
