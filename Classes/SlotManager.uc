@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: SlotManager.uc,v 1.2 2004/05/17 21:19:04 elmuerte Exp $ -->
+	<!-- $Id: SlotManager.uc,v 1.3 2004/05/21 20:56:54 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManager extends SlotManagerBase config;
 
@@ -48,6 +48,8 @@ struct SlotRecord
 	var bool specOnly;
 	/** open method, SOM_Expand by default */
 	var ESlotOpenMethod method;
+	/** a comment, can be anything, not used for anything */
+	var string comment;
 };
 /** slot configuration */
 var globalconfig array<SlotRecord> Slots;
@@ -79,9 +81,9 @@ function bool PreLogin(	string Options, string Address, string PlayerID,
 		if (class'wString'.static.MaskedCompare(tmp, Slots[i].data))
 		{
 			if (Slots[i].specOnly && !bSpectator) continue;
-			log("Found reserved slot (#"$i$") for"@tmp, name);
    			if (Level.Game.AtCapacity(bSpectator))
 			{
+				log("Found reserved slot (#"$i$") for"@tmp, name);
 				if (Slots[i].method == SOM_Expand)
 				{
 					if (!AtMaxCapacity(bSpectator)) IncreaseCapicity(bSpectator);

@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: SlotManWebQueryHandler.uc,v 1.1 2004/05/17 21:19:04 elmuerte Exp $ -->
+	<!-- $Id: SlotManWebQueryHandler.uc,v 1.2 2004/05/21 20:56:54 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManWebQueryHandler extends SExWebQueryHandler;
 
@@ -42,6 +42,7 @@ function QuerySlots(WebRequest Request, WebResponse Response)
 		SlotManager.Slots[SlotManager.Slots.Length-1].type = SlotManager.GetSlotType(Request.GetVariable("type", "0"));
 		SlotManager.Slots[SlotManager.Slots.Length-1].specOnly = Request.GetVariable("speconly", "") == "true";
 		SlotManager.Slots[SlotManager.Slots.Length-1].method = SlotManager.GetSlotOpenMethod(Request.GetVariable("method", "0"));
+		SlotManager.Slots[SlotManager.Slots.Length-1].comment = Request.GetVariable("comment", "");
 		SlotManager.SaveConfig();
 	}
 	else if (Request.GetVariable("submit", "") == "delete")
@@ -62,6 +63,7 @@ function QuerySlots(WebRequest Request, WebResponse Response)
 			SlotManager.Slots[i].type = SlotManager.GetSlotType(Request.GetVariable("type", "0"));
 			SlotManager.Slots[i].specOnly = Request.GetVariable("speconly", "") == "true";
 			SlotManager.Slots[i].method = SlotManager.GetSlotOpenMethod(Request.GetVariable("method", "0"));
+			SlotManager.Slots[i].comment = Request.GetVariable("comment", "");
 			SlotManager.SaveConfig();
 		}
 	}
@@ -88,6 +90,7 @@ function QuerySlots(WebRequest Request, WebResponse Response)
 			tmp $= ">"$MethodType[j];
 		}
 		Response.Subst("method", tmp);
+		Response.Subst("comment", SlotManager.Slots[i].comment);
 		slots = slots $ WebInclude(DefaultPage $ "-entry");
 	}
 	Response.Subst("slots", slots);
