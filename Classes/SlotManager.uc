@@ -5,9 +5,9 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: SlotManager.uc,v 1.6 2004/06/05 09:02:23 elmuerte Exp $ -->
+	<!-- $Id: SlotManager.uc,v 1.7 2004/08/03 14:45:16 elmuerte Exp $ -->
 *******************************************************************************/
-class SlotManager extends SlotManagerBase config;
+class SlotManager extends SlotManagerBase config parseconfig;
 
 /**
 	slot record type. ST_IP = IP address; ST_Hash = CDKey hash;

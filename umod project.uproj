@@ -17,15 +17,15 @@ Web\ServerAdmin\slotmanager-entry.inc
 product=UT2004
 version=3100
 developer=Epic Games, Inc.
-productURL=http://www.unrealtournament2003.com/
+productURL=http://www.unrealtournament.com/
 versionURL=http://unreal.epicgames.com/
 developerURL=http://www.epicgames.com/
 [Product]
 product=ServerExt
-version=105
+version=105b
 developer=Michiel "El Muerte" Hendriks
 productURL=http://ut2004.elmuerte.com/ServerExt
-versionURL=http://ut2004.elmuerte.com/files/ServerExt-v105a-ut4mod.zip
+versionURL=http://ut2004.elmuerte.com/files/ServerExt-v105b-ut4mod.zip
 developerURL=http://ut2004.elmuerte.com/
 readme=Help\ServerExt.html
 title=ServerExt Setup

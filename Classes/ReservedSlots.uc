@@ -5,8 +5,8 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ReservedSlots.uc,v 1.2 2004/05/17 21:19:04 elmuerte Exp $ -->
+	<!-- $Id: ReservedSlots.uc,v 1.3 2004/08/03 14:45:16 elmuerte Exp $ -->
 *******************************************************************************/
-class ReservedSlots extends AccessControl config;
+class ReservedSlots extends AccessControl config parseconfig;
 
 #include Classes/ReservedSlots.inc
