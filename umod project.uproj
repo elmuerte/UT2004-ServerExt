@@ -1,0 +1,29 @@
+d:\dev\ut2004\ut2-code
+0.8
+[Group]
+name=ServerExt
+System\ServerExtClient.int
+System\ServerExtClient.u
+System\LibHTTP2.u
+System\ServerExt.u
+System\ServerExt.int
+System\ServerExt.ucl
+[Requirement]
+product=UT2004
+version=3100
+developer=Epic Games, Inc.
+productURL=http://www.unrealtournament2003.com/
+versionURL=http://unreal.epicgames.com/
+developerURL=http://www.epicgames.com/
+[Product]
+product=ServerExt
+version=100
+developer=Michiel "El Muerte" Hendriks
+productURL=http://ut2004.elmuerte.com/ServerExt
+versionURL=http://ut2004.elmuerte.com/files/ServerExt-v100.zip
+developerURL=http://ut2004.elmuerte.com/
+readme=Help\ServerExt.html
+title=ServerExt Setup
+cleanup=True
+logo=Help\ServerExt.bmp
+archive=ServerExt.ut2mod
