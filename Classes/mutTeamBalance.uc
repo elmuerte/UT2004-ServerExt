@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: mutTeamBalance.uc,v 1.1 2004/05/23 15:36:00 elmuerte Exp $ -->
+	<!-- $Id: mutTeamBalance.uc,v 1.2 2004/05/23 19:28:10 elmuerte Exp $ -->
 *******************************************************************************/
 /*
 
@@ -71,6 +71,9 @@ class mutTeamBalance extends Mutator;
 var protected TeamGame TeamGame;
 /** used to check for reserved slots */
 var protected SlotManager SlotManager;
+
+/** announce this mutator to the master server */
+var(Config) config bool bAnnounce;
 
 /** minimum difference between team sizes before actions are taken */
 var(Config) config int iSizeThreshold;
@@ -220,8 +223,8 @@ function PCTeamSwitch(PlayerController PC)
 	{
 		TeamRecords.length = i+1;
 		TeamRecords[i].PC = PC;
-		TeamRecords[i].Team = TeamRecords[i].PC.PlayerReplicationInfo.Team.TeamIndex;
-		return;
+		//TeamRecords[i].Team = TeamRecords[i].PC.PlayerReplicationInfo.Team.TeamIndex;
+		TeamRecords[i].Team = -1;
 	}
 	if (TeamRecords[i].Team != TeamRecords[i].PC.PlayerReplicationInfo.Team.TeamIndex)
 	{
@@ -427,11 +430,19 @@ function AddBotToTeam(UnrealTeamInfo Team, optional string botname)
 		NewBot.GotoState('Dead','MPStart');
 }
 
+/** add information to the server details listing */
+function GetServerDetails( out GameInfo.ServerResponseLine ServerState )
+{
+	if (bAnnounce) super.GetServerDetails(ServerState);
+}
+
 defaultProperties
 {
 	GroupName="Team Balancer"
 	FriendlyName="Team Balancer"
 	Description="Make sure the teams have equal size when the odds are off"
+
+	bAnnounce=true
 
 	iSizeThreshold=2
 	bIgnoreWinning=false
