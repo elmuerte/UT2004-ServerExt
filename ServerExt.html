@@ -112,7 +112,7 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 </pre>
 
 <h2>Revision history</h2>
-<h3>Changes since v105</h3>
+<h3>Changes since v106</h3>
 <ul>
 	<li>ReservedSlots: reserved slots users won't be kicked to make room</li>
 	<li>Fixed ChatFilter's warning mutator not loading</li>
@@ -185,7 +185,7 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 <h2>General Installation</h2>
 Copy the following files to the System directory of your UT2004 servers:
 <ul>
-	<li>LibHTTP3.u</li>
+	<li>LibHTTP3_5.u</li>
 	<li>ServerExt.int</li>
 	<li>ServerExt.u</li>
 	<li>ServerExt.ucl</li>
@@ -203,6 +203,7 @@ Copy the following files to the Web\ServerAdmin directory of your UT2004 servers
 	<li>slotmanager.htm</li>
 	<li>slotmanager-entry.inc</li>
 </ul>
+<b>Note:</b> do not add any of the packages to the ServerPackages list. When a package needs to be added to that list ServerExt will do that automatically.
 
 <hr />
 <a name="chatfilter"></a><h1>Chat Filter</h1>
@@ -489,6 +490,7 @@ Slots=(Data="192.168.*",Type=ST_IP,specOnly=False,Method=SOM_KickRandom)
 				<li>ST_Nick - Requested nick name</li>
 				<li>ST_Password - The password entered on the connect url (?password=[somepassword])</li>
 				<li>ST_Options - Match with the connect url. This can be usefull to keep the check comepletely secret. For example a the data contains "*MySecret=URLOption*", if the player joins the server with: ip.to.server?name=MyNick?MySecret=URLOption (or similar) it will match.</li>
+			</ul>
 			</dd>
 			<dt>specOnly</dt>
 			<dd>if set to True this slot is for spectators only</dd>
@@ -835,6 +837,13 @@ The package comes with a preconfigured RSS.ini.example file that contains config
 <li><a href="http://games.slashdot.org" target="_blank">SlashDot: Games</a></li>
 </ul>
 
+To learn more on how to set up your own RSS feeds follow read the following articles:
+<ul>
+	<li><a href="http://www-106.ibm.com/developerworks/library/w-rss.html">An introduction to RSS news feeds</a></li>
+	<li><a href="http://feedvalidator.org/docs/rss2.html">RSS 2.0 specification</a></li>
+	<li><a href="http://www.google.com/search?q=creating+rss+feeds">Or search google</a></li>
+</ul>
+
 <h4>Local RSS Feed configuration</h4>
 When you host multiple servers from the same location but with different admins running the servers (normal GISP concept). You might want to store the RSS Feed Configuration to the server's configuration file. <br />
 To set this up you need to add the following to the configuration of MutRSS<br />
@@ -896,6 +905,19 @@ All commands start with <code>mutate rss</code>, after which the following comma
 	<td>add a new RSS feed with name and download location</td>
 </tr>
 </table>
+
+<h2>ServerAdsSE like messages</h2>
+To simply add lines to be broadcasted without using a remote RSS feed (like ServerAdSE used to work). Just create a feed like this:
+<pre>
+[SomeName RSSFeedRecord]
+rssEnabled=True
+rssUpdateInterval=<b>0</b>
+ChannelTitle=Custom entries
+Entries=(Title="This is the first line")
+Entries=(Title="This is the second line")
+Entries=(Title="Even more lines")
+</pre>
+Note that the value of <code>rssUpdateInterval</code> is set to 0.
 
 <hr />
 <a name="teambalance"></a><h1>Team Balance mutator</h1>
@@ -974,10 +996,12 @@ BalanceMethod=BM_Newest
 	defined by their score/death ration (BM_Worst, BM_Best).<br />
 	Or just randomly (BM_Random). Key players are never balanced.</dd>
 
+	<dt>bDebug</dt>
+	<dd>If you add <code>bDebug=true</code> debug messages will be added to the log file. If you have problems with Team Balancer you might want to add this option to inspect the team balancer's actions.</dd>
 </dl>
 
 <hr />
-<h2>License for LibHTTP3</h2>
+<h2>License for LibHTTP3.5</h2>
 <pre>
 <a href="http://wiki.beyondunreal.com/wiki/LesserOpenUnrealModLicense">Lesser Open Unreal Mod License</a>
 Version 1, March 2004
