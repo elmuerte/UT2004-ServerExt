@@ -2,8 +2,8 @@ d:\dev\ut2004\ut2-code
 0.8
 [Group]
 name=ServerExt
-System\ServerExtClient.int
-System\ServerExtClient.u
+System\ServerExtClient101.int
+System\ServerExtClient101.u
 System\LibHTTP2.u
 System\ServerExt.u
 System\ServerExt.int
@@ -20,7 +20,7 @@ product=ServerExt
 version=100
 developer=Michiel "El Muerte" Hendriks
 productURL=http://ut2004.elmuerte.com/ServerExt
-versionURL=http://ut2004.elmuerte.com/files/ServerExt-v100.zip
+versionURL=http://ut2004.elmuerte.com/files/ServerExt-v101.zip
 developerURL=http://ut2004.elmuerte.com/
 readme=Help\ServerExt.html
 title=ServerExt Setup
