@@ -21,7 +21,7 @@ versionURL=http://unreal.epicgames.com/
 developerURL=http://www.epicgames.com/
 [Product]
 product=ServerExt
-version=103
+version=104
 developer=Michiel "El Muerte" Hendriks
 productURL=http://ut2004.elmuerte.com/ServerExt
 versionURL=http://ut2004.elmuerte.com/files/ServerExt-v103.zip

@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ChatFilter.uc,v 1.3 2004/05/13 18:26:18 elmuerte Exp $ -->
+	<!-- $Id: ChatFilter.uc,v 1.4 2004/05/14 10:47:56 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -561,10 +561,10 @@ function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationI
 	local string logpre;
 
 	cr = -1;
-	if (SenderPRI != none) cr = findChatRecord(PlayerController(SenderPRI.Owner), true);
+	if (SenderPRI != none) cr = findChatRecord(SenderPRI.Owner, true);
 	if ((cr > -1 ) && (ChatRecords[cr].LastMsgTick == LastMsgTick))
 	{
-		log("duplicate request ("$LastMsgTick@ChatRecords[cr].LastMsgTick$"), use cached:"@SenderPRI.PlayerName@"->"@Receiver.PlayerReplicationInfo.PlayerName);
+		//log("duplicate request ("$LastMsgTick@ChatRecords[cr].LastMsgTick$"), use cached:"@SenderPRI.PlayerName@"->"@Receiver.PlayerReplicationInfo.PlayerName);
 		msg = ChatRecords[cr].FilteredMsg;
 		return super.AcceptBroadcastText(Receiver, SenderPRI, Msg, Type);
 	}
@@ -603,16 +603,17 @@ function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationI
 			ChatRecords[cr].count = 0;
 		}
 	}
-	if (bLogChat && ((Type == 'Say') || (Type == 'TeamSay')))
+	if (bLogChat && ((Type == 'Say') || (Type == 'TeamSay')) && (SenderPRI != none))
 	{
-		log(SenderPRI.PlayerName@msg);
+		//log(SenderPRI.PlayerName@msg);
 		WriteLog(PlayerController(SenderPRI.Owner), msg, logpre$"CHAT");
 	}
-
-	Msg = filterString(Msg, cr);
-	ChatRecords[cr].FilteredMsg = Msg;
-	judge(PlayerController(SenderPRI.Owner), cr);
-
+	if (cr > -1)
+	{
+		Msg = filterString(Msg, cr);
+		ChatRecords[cr].FilteredMsg = Msg;
+		judge(PlayerController(SenderPRI.Owner), cr);
+	}
 	return super.AcceptBroadcastText(Receiver, SenderPRI, Msg, Type);
 }
 
