@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: SlotManager.uc,v 1.3 2004/05/21 20:56:54 elmuerte Exp $ -->
+	<!-- $Id: SlotManager.uc,v 1.4 2004/05/23 15:36:00 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManager extends SlotManagerBase config;
 
@@ -65,8 +65,34 @@ var localized string PIgroup, PIdesc[3], PIhelp[3], KickMsg;
 function bool PreLogin(	string Options, string Address, string PlayerID,
 						out string Error, out string FailCode, bool bSpectator)
 {
-	local int i;
-	local string tmp;
+	local int idx;
+	local string match;
+
+	if (IsReserved(Options, Address, PlayerId, bSpectator, idx, match))
+	{
+		if (Level.Game.AtCapacity(bSpectator))
+		{
+			log("Found reserved slot (#"$idx$") for"@match, name);
+			if (Slots[idx].method == SOM_Expand)
+			{
+				if (!AtMaxCapacity(bSpectator)) IncreaseCapicity(bSpectator);
+				else {
+					log("Maximum capicity reached", name);
+					return false;
+				}
+			}
+			else return KickFreeRoom(Slots[idx].method, bSpectator, Level.Game.ParseOption(Options, "name"));
+		}
+		return true;
+	}
+}
+
+/** return true when the player has a reserved slot */
+function bool IsReserved(string Options, string Address, string PlayerID, optional bool bSpectator,
+	optional out int i, optional out string tmp)
+{
+	//local int i;
+	//local string tmp;
 
 	for (i = 0; i < Slots.Length; i++)
 	{
@@ -81,22 +107,10 @@ function bool PreLogin(	string Options, string Address, string PlayerID,
 		if (class'wString'.static.MaskedCompare(tmp, Slots[i].data))
 		{
 			if (Slots[i].specOnly && !bSpectator) continue;
-   			if (Level.Game.AtCapacity(bSpectator))
-			{
-				log("Found reserved slot (#"$i$") for"@tmp, name);
-				if (Slots[i].method == SOM_Expand)
-				{
-					if (!AtMaxCapacity(bSpectator)) IncreaseCapicity(bSpectator);
-					else {
-						log("Maximum capicity reached", name);
-						return false;
-					}
-				}
-				else return KickFreeRoom(Slots[i].method, bSpectator, Level.Game.ParseOption(Options, "name"));
-			}
 			return true;
 		}
 	}
+	return false;
 }
 
 /** check of the maximum capicity has been reached */
