@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.5 2004/03/19 10:41:06 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.6 2004/03/19 21:40:39 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -18,8 +18,8 @@ var protected string SPACE_REPLACE;
 // Configuration options
 /** master enable switch */
 var(Config) config bool bEnabled;
-/** the client side GUI browser window to spawn on: "mutate rss browser" */
-var(Config) config string BrowserWindow;
+/** the client side GUI browser portal to spawn on: "mutate rss browser" */
+var(Config) config string BrowserPortal;
 
 /** should the RSS feed content be broadcasted */
 var(Broadcasting) config bool bBroadcastEnabled;
@@ -75,7 +75,7 @@ var(Updating) config bool bUpdateEnabled;
 var(Updating) config int iDefUpdateInterval;
 
 /** contains links to the feeds */
-var protected array<RSSFeedRecord> Feeds;
+var array<RSSFeedRecord> Feeds;
 /** a general HttpSock instance so we can use it's internal chaching */
 var protected HttpSock htsock;
 /** the current location in the Feeds list that will be checked to be updated */
@@ -298,7 +298,7 @@ function Mutate(string MutateString, PlayerController Sender)
 			tmp2 = "";
 			if (cmd.Length > 2) tmp = cmd[2];
 			if (cmd.Length > 3) tmp2 = cmd[3];
-			Sender.ClientOpenMenu(BrowserWindow, false, tmp, tmp2);
+			SummonPortal(Sender, tmp, tmp2);
 		}
 		// Admin commands
 		else if ((cmd[1] ~= "stop") && (Sender.PlayerReplicationInfo.bAdmin))
@@ -373,6 +373,18 @@ function Mutate(string MutateString, PlayerController Sender)
 			}
 		}
 	}
+}
+
+/** open de client side RSS browser */
+function SummonPortal(PlayerController sender, string param1, string param2)
+{
+	local class<RSSBrowserPortalBase> portalclass;
+	local RSSBrowserPortalBase portal;
+	portalclass = class<RSSBrowserPortalBase>(DynamicLoadObject(BrowserPortal, class'Class', false));
+	if (portalclass == none) return;
+	portal = spawn(portalclass, Sender);
+	portal.RSSSource = self;
+	portal.OpenBrowser(param1, param2);
 }
 
 function Timer()
@@ -505,7 +517,7 @@ defaultproperties
 	bInteractive=true
 	bUpdateEnabled=true
 	iDefUpdateInterval=45
-	BrowserWindow="ServerExtClient.MutRSSBrowser"
+	BrowserPortal="ServerExtClient.RSSBrowserPortal"
 
 	msgAdded="Added RSS Feed %s"
 	msgDupName="Already a RSS Feed present with that name: %s"

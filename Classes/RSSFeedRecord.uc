@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: RSSFeedRecord.uc,v 1.5 2004/03/19 10:41:06 elmuerte Exp $ -->
+	<!-- $Id: RSSFeedRecord.uc,v 1.6 2004/03/19 21:40:39 elmuerte Exp $ -->
 *******************************************************************************/
 
 class RSSFeedRecord extends LibHTTP2.NewsFeed config(RSS);
@@ -106,12 +106,11 @@ defaultproperties
 	TextColor=(R=255,G=255,B=0)
 
 	HTMLSpecialChars(0)=(from="&amp;",to="&")
-	HTMLSpecialChars(1)=(from="&quote;",to="\"")
-	HTMLSpecialChars(2)=(from="&squote;",to="'")
-	HTMLSpecialChars(3)=(from="&nbsp;",to=" ")
-	HTMLSpecialChars(4)=(from="&lt;",to="<")
-	HTMLSpecialChars(5)=(from="&gt;",to=">")
-	HTMLSpecialChars(6)=(from="&copy;",to="©")
-	HTMLSpecialChars(7)=(from="&reg;",to="®")
+	HTMLSpecialChars(1)=(from="&quot;",to="\"")
+	HTMLSpecialChars(2)=(from="&nbsp;",to=" ")
+	HTMLSpecialChars(3)=(from="&lt;",to="<")
+	HTMLSpecialChars(4)=(from="&gt;",to=">")
+	HTMLSpecialChars(5)=(from="&copy;",to="©")
+	HTMLSpecialChars(6)=(from="&reg;",to="®")
 }
 
