@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.22 2004/10/01 10:10:14 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.23 2004/10/01 12:35:36 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -188,8 +188,8 @@ function InitRSS()
 	LoadRSSFeeds();
 	if (bUpdateEnabled)
 	{
-		htsock = spawn(class'HttpSock');
-		if (htsock.VERSION < 300) Error("LibHTTP version 2 or higher required");
+		htsock = spawn(class'LibHTTP3_5.HttpSock');
+		if (htsock.VERSION < 350) Error("LibHTTP version 3.5 or higher required");
 		htsock.OnComplete = ProcessRSSUpdate;
 		htsock.OnResolveFailed = RSSResolveFailed;
 		htsock.OnConnectionTimeout = RSSConnectionTimeout;

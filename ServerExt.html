@@ -378,6 +378,61 @@ sFileFormat="PlayerJoin_%P_%Y_%M_%D_%H_%I_%S"
 </dl>
 
 <hr />
+<a name="remotestats"></a><h1>Remote stats</a></h1>
+Remote stats allows you do send the stats to a remote server. The stats data will be send to a webserver that can then analyse the data. You can use this together with <a href="http://ut2003stats.sf.net" target="_blank">UT StatsDB</a>. <br />
+This feature will not obstruct with the normal stats logging.
+
+<h2>Installation</h2>
+To install Remote Stats you will have to change the stats logging class:
+<pre>
+[Engine.GameInfo]
+GameStatsClass=ServerExt.RemoteStats
+</pre>
+
+<h2>Configuration</h2>
+There are a few things you can configure. Most important is to set the PostURL.
+<pre>
+[ServerExt.RStatsLink]
+BufferSize=2048
+PostURL=http://location.to/RemoteLogDump.php
+fRetryDelay=30
+SecretName=secret
+SecretValue=MySecret
+</pre>
+<dl>
+	<dt>BufferSize</dt>
+	<dd>The stats data will be send when it reaches this size (in bytes). This is used to reduce traffic. You don't want to set this to high because, but too low isn't very good too. A nice size would be 10% of the average log size. A value of 10000 would be too high. If you experience server lag when the stats are uploaded you might want to reduce the buffer size.</dd>
+	<dt>PostURL</dt>
+	<dd>This is the URL to post the data to. The script must return a HTTP 200 code or otherwise the internal caching will be triggered.</dd>
+	<dt>fRetryDelay</dt>
+	<dd>Number of seconds between retries. When posting of the data fails (e.g. HTTP code other than 200) it will try to repost it after this delay.</dd>
+	<dt>SecretName and SecretValue</dt>
+	<dd>This combination will be added to the post data. You can use this to validate the POST data in the script, like a password.</dd>
+</dl>
+
+<h2>Usage</h2>
+The data posted will have the following field:
+<dl>
+	<dt>serverHost</dt>
+	<dd>the IP of the host (note, this can be an internal IP)</dd>
+	<dt>serverName</dt>
+	<dd>the name of the server</dd>
+	<dt>serverPort</dt>
+	<dd>the server's listen port</dd>
+	<dt>gameDateTime</dt>
+	<dd>The time this match started, you can use this to distinguish matches from the same server.<br />
+	The date will be in the following format: <code>DayName, Day MonthName Year Hour:Minute:Second</code>.<br />
+	For example: <code>Fri, 01 Oct 2004 11:51:37</code></dd>
+	<dt>sequence</dt>
+	<dd>The sequence number, this will be incremented for every post. You can use this to validate the data received to be in order. The first value is 0</dd>
+	<dt>"SecretName"</dt>
+	<dd>with as value "SecretValue"</dd>
+	<dt>stats</dt>
+	<dd>The stats data AS IS. Just like the log file usualy contains.</dd>
+</dl>
+An example PHP script is included with this package, you can find it in: <code>Help/ServerExt/RemoteLogDump.php</code>
+
+<hr />
 <a name="reservedslots"></a><h1>Reserved slots</h1>
 This add-on allows you to add reserved slots. Players with the correct login details can still enter a server that is at capicity. <br />
 This add-on replaces the AccessControl (both the single admin and multiple admin system are supported), so this mod doesn't work with other mods that replace the AccessControl.<br />

@@ -6,10 +6,11 @@ System\ServerExtClientA.int
 System\ServerExtClientA.u
 System\ServerExtClientB.int
 System\ServerExtClientB.u
-System\LibHTTP3.u
+System\LibHTTP3_5.u
 System\ServerExt.u
 System\ServerExt.int
 System\ServerExt.ucl
+System\ServerExtOL.u
 System\wUtils105.u
 System\RSS.ini.example
 Web\ServerAdmin\rssfeeds.htm

@@ -3,5 +3,3 @@ Lee Seats
 
 PoW
 - different actions for different words
-
-Feature: RemoteStats
