@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.10 2004/03/23 20:51:20 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.11 2004/03/24 11:39:26 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -23,6 +23,8 @@ var(Config) config string sExlusiveFeeds;
 /** the client side GUI browser portal to spawn on: "mutate rss browser", after
 	spawning the Create event is called */
 var(Config) config string BrowserPortal;
+/** The WebAdmin Query handler */
+var(Config) config string WebQueryHandler;
 
 /** should the RSS feed content be broadcasted */
 var(Broadcasting) config bool bBroadcastEnabled;
@@ -70,9 +72,9 @@ var(Broadcasting) config string sBroadcastFormat;
 
 
 /** if the mutator is interactive users can use the mutate command */
-var() config bool bInteractive;
+var(Interaction) config bool bInteractive;
 /** if set to true the user can use 'rss browser' for a client side RSS browser */
-var() config bool bBrowserEnabled;
+var(Interaction) config bool bBrowserEnabled;
 
 /** if automatic updating of the RSS feeds should happen should happen */
 var(Updating) config bool bUpdateEnabled;
@@ -96,6 +98,7 @@ var localized string msgAdded, msgDupName, msgDupLoc, msgRemoved, msgDisabledFee
 /** Play Info descriptions */
 var localized string piDesc[13];
 var localized string piOpt[2];
+var localized string msgHelp[5], msgAdminHelp[7];
 
 event PreBeginPlay()
 {
@@ -106,11 +109,51 @@ event PreBeginPlay()
 		return;
 	}
 	InitRSS();
+	LoadWebAdmin();
 }
 
 event PostBeginPlay()
 {
 	if (bBroadcastEnabled && bInitialBroadcast) Timer();
+}
+
+function LoadWebAdmin()
+{
+	local UTServerAdmin webadmin;
+	local int i;
+	local class<xWebQueryHandler> qh;
+
+	foreach AllObjects(class'UTServerAdmin', webadmin) if (webadmin != none) break;
+	if (webadmin == none)
+	{
+		for (i = 0; i < class'UTServerAdmin'.default.QueryHandlerClasses.Length; i++)
+		{
+			if (class'UTServerAdmin'.default.QueryHandlerClasses[i] == WebQueryHandler) break;
+		}
+		if (i >= class'UTServerAdmin'.default.QueryHandlerClasses.Length)
+		{
+			class'UTServerAdmin'.default.QueryHandlerClasses[class'UTServerAdmin'.default.QueryHandlerClasses.Length-1] = WebQueryHandler;
+			class'UTServerAdmin'.static.StaticSaveConfig();
+			log("Added query handler"@WebQueryHandler, name);
+		}
+		return;
+	}
+	for (i = 0; i < webadmin.QueryHandlerClasses.Length-1; i++)
+	{
+		if (webadmin.QueryHandlerClasses[i] == WebQueryHandler) break;
+	}
+	if (i >= webadmin.QueryHandlerClasses.Length)
+	{
+		webadmin.QueryHandlerClasses[webadmin.QueryHandlerClasses.Length-1] = WebQueryHandler;
+		qh = class<xWebQueryHandler>(DynamicLoadObject(WebQueryHandler, class'Class'));
+		if (qh != none)
+		{
+			webadmin.QueryHandlers[webadmin.QueryHandlers.Length-1] = new(webadmin) qh;
+			log("Loaded"@WebQueryHandler, name);
+		}
+		else log("No valid QueryHandler"@WebQueryHandler, name);
+		webadmin.SaveConfig();
+	}
 }
 
 /** initialize RSS */
@@ -318,6 +361,20 @@ function Mutate(string MutateString, PlayerController Sender)
 		{
 			if (bBrowserEnabled) SummonPortal(Sender);
 		}
+		else if (cmd[1] ~= "help")
+		{
+			for (i = 0; i < 5; i++)
+			{
+				SendMessage(msgHelp[i], Sender);
+			}
+			if (isAdmin(Sender))
+			{
+				for (i = 0; i < 8; i++)
+				{
+					SendMessage(msgAdminHelp[i], Sender);
+				}
+			}
+		}
 		// Admin commands
 		else if ((cmd[1] ~= "stop") && isAdmin(Sender))
 		{
@@ -508,7 +565,7 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 {
 	Super.FillPlayInfo(PlayInfo);
 	PlayInfo.AddSetting(default.FriendlyName, "bEnabled", 			default.piDesc[0],	128, 1, "CHECK");
-	PlayInfo.AddSetting(default.FriendlyName, "sExlusiveFeeds",		default.piDesc[11],	128, 1, "TEXT");
+	PlayInfo.AddSetting(default.FriendlyName, "sExlusiveFeeds",		default.piDesc[11],	128, 1, "TEXT", "50;");
 
 	PlayInfo.AddSetting(default.FriendlyName, "bBroadcastEnabled", 	default.piDesc[1],	107, 10, "CHECK");
 	PlayInfo.AddSetting(default.FriendlyName, "fBroadcastDelay", 	default.piDesc[2],	107, 11, "TEXT", "10;1:9999");
@@ -516,7 +573,7 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 	PlayInfo.AddSetting(default.FriendlyName, "BroadcastMethod", 	default.piDesc[4],	106, 13, "SELECT", default.piOpt[0]);
 	PlayInfo.AddSetting(default.FriendlyName, "iBroadcastMessages",	default.piDesc[5],	105, 14, "TEXT", "2;1:99");
 	PlayInfo.AddSetting(default.FriendlyName, "iGroupSize", 		default.piDesc[6],	105, 15, "TEXT", "2;1:99");
-	PlayInfo.AddSetting(default.FriendlyName, "sBroadcastFormat", 	default.piDesc[7],	104, 16, "TEXT");
+	PlayInfo.AddSetting(default.FriendlyName, "sBroadcastFormat", 	default.piDesc[7],	104, 16, "TEXT", "50;");
 
 	PlayInfo.AddSetting(default.FriendlyName, "bInteractive", 		default.piDesc[8],	 97, 20, "CHECK");
 	PlayInfo.AddSetting(default.FriendlyName, "bBrowserEnabled", 	default.piDesc[12],	 97, 20, "CHECK");
@@ -561,6 +618,7 @@ defaultproperties
 	bUpdateEnabled=true
 	iDefUpdateInterval=45
 	BrowserPortal="ServerExtClient.RSSBrowserPortal"
+	WebQueryHandler="ServerExt.RSSWebQueryHandler"
 
 	msgAdded="Added RSS Feed %s"
 	msgDupName="Already a RSS Feed present with that name: %s"
@@ -593,4 +651,18 @@ defaultproperties
 	piDesc[10]="Default update time"
 	piDesc[11]="Exlcusive feeds"
 	piDesc[12]="Client side browser"
+
+	msgHelp[0]="RSS Feed Mutator Help:"
+	msgHelp[1]="mutate rss browser            show client side browser"
+	msgHelp[2]="mutate rss help               show this message"
+	msgHelp[3]="mutate rss list               show feed list"
+	msgHelp[4]="mutate rss show n [m]         show m items from feed #n, m is 5 by default"
+
+	msgAdminHelp[0]="mutate rss start              start the mutator, when it's disabled"
+	msgAdminHelp[1]="mutate rss stop               stop the mutator"
+	msgAdminHelp[2]="mutate rss update n           force an update on RSS feed #n"
+	msgAdminHelp[3]="mutate rss enable n           enable RSS feed #n"
+	msgAdminHelp[4]="mutate rss disable n          disable RSS feed #n"
+	msgAdminHelp[5]="mutate rss remove n           remove RSS feed #n"
+	msgAdminHelp[6]="mutate rss add name location  add a new RSS feed with name and download location"
 }
