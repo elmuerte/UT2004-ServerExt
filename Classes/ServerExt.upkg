@@ -2,3 +2,8 @@
 AllowDownload=False
 ClientOptional=False
 ServerSideOnly=True
+Official=False
+
+[Package_Description]
+ServerExt contains various server side add-ons.
+

@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.9 2004/03/22 20:30:38 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.10 2004/03/23 20:51:20 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -71,6 +71,8 @@ var(Broadcasting) config string sBroadcastFormat;
 
 /** if the mutator is interactive users can use the mutate command */
 var() config bool bInteractive;
+/** if set to true the user can use 'rss browser' for a client side RSS browser */
+var() config bool bBrowserEnabled;
 
 /** if automatic updating of the RSS feeds should happen should happen */
 var(Updating) config bool bUpdateEnabled;
@@ -92,7 +94,7 @@ var localized string msgAdded, msgDupName, msgDupLoc, msgRemoved, msgDisabledFee
 	msgEnabledFeed, msgUpdateFeed, msgDisabledMut, msgEnabledMut, msgEmpty,
 	msgDisabled, msgList, msgMutDisabled, msgListEntry, msgShowEntry, msgShow;
 /** Play Info descriptions */
-var localized string piDesc[12];
+var localized string piDesc[13];
 var localized string piOpt[2];
 
 event PreBeginPlay()
@@ -314,7 +316,7 @@ function Mutate(string MutateString, PlayerController Sender)
 		}
 		else if (cmd[1] ~= "browser")
 		{
-			SummonPortal(Sender);
+			if (bBrowserEnabled) SummonPortal(Sender);
 		}
 		// Admin commands
 		else if ((cmd[1] ~= "stop") && isAdmin(Sender))
@@ -517,11 +519,28 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 	PlayInfo.AddSetting(default.FriendlyName, "sBroadcastFormat", 	default.piDesc[7],	104, 16, "TEXT");
 
 	PlayInfo.AddSetting(default.FriendlyName, "bInteractive", 		default.piDesc[8],	 97, 20, "CHECK");
+	PlayInfo.AddSetting(default.FriendlyName, "bBrowserEnabled", 	default.piDesc[12],	 97, 20, "CHECK");
 
 	PlayInfo.AddSetting(default.FriendlyName, "bUpdateEnabled", 	default.piDesc[9],	128, 20, "CHECK");
 	PlayInfo.AddSetting(default.FriendlyName, "iDefUpdateInterval", default.piDesc[10],	128, 20, "TEXT", "5;1:99999");
 
 }
+
+function GetServerDetails( out GameInfo.ServerResponseLine ServerState )
+{
+	local int i;
+	local string tmp;
+	super.GetServerDetails(ServerState);
+	ServerState.ServerInfo.Length = ServerState.ServerInfo.Length+1;
+	ServerState.ServerInfo[ServerState.ServerInfo.Length-1].Key = "RSS Feeds";
+	for (i = 0; i < Feeds.Length; i++)
+	{
+		if (tmp != "") tmp $= ", ";
+		tmp $= Feeds[i].ChannelTitle;
+	}
+	ServerState.ServerInfo[ServerState.ServerInfo.Length-1].Value = tmp;
+}
+
 
 defaultproperties
 {
@@ -538,6 +557,7 @@ defaultproperties
 	iGroupSize=1
 	sBroadcastFormat="%title% [%ftitle%]"
 	bInteractive=true
+	bBrowserEnabled=true
 	bUpdateEnabled=true
 	iDefUpdateInterval=45
 	BrowserPortal="ServerExtClient.RSSBrowserPortal"
@@ -572,4 +592,5 @@ defaultproperties
 	piDesc[9]="Updating enabled"
 	piDesc[10]="Default update time"
 	piDesc[11]="Exlcusive feeds"
+	piDesc[12]="Client side browser"
 }
