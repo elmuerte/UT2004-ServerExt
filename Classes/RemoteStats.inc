@@ -5,29 +5,29 @@ var protected RStatsLink link;
 
 function Logf(string LogString)
 {
-	Super.Logf(LogString);
-	if (link != none) link.BufferLogf(LogString);
+    Super.Logf(LogString);
+    if (link != none) link.BufferLogf(LogString);
 }
 
 function Shutdown()
 {
-	super.Shutdown();
-	if (link != none) link.FinalFlush();
+    super.Shutdown();
+    if (link != none) link.FinalFlush();
 }
 
 function EndGame(string Reason)
 {
-	super.EndGame(Reason);
-	if (link != none) link.FinalFlush();
+    super.EndGame(Reason);
+    if (link != none) link.FinalFlush();
 }
 
 function PreBeginPlay()
 {
-	super.PreBeginPlay();
-	link = spawn(RStatsLinkClass);
+    super.PreBeginPlay();
+    link = spawn(RStatsLinkClass);
 }
 
 defaultproperties
 {
-	RStatsLinkClass=class'RStatsLink'
+    RStatsLinkClass=class'RStatsLink'
 }
