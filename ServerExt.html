@@ -13,6 +13,7 @@ The ServerExt package is being developed by <a href="http://wiki.beyondunreal.co
 <h2>Downloads</h2>
 New versions of this package can be downloaded from <a href="http://ut2004.elmuerte.com/ServerExt">the ServerExt website</a>.<br />
 <ul>
+	<li>Version 103 <a href="http://ut2004.elmuerte.com/files/ServerExt-v103.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v103-ut2mod.zip">[ut2mod]</a></li>
 	<li>Version 102 <a href="http://ut2004.elmuerte.com/files/ServerExt-v102.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v102-ut2mod.zip">[ut2mod]</a></li>
 	<li>Version 101 <a href="http://ut2004.elmuerte.com/files/ServerExt-v101.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v101-ut2mod.zip">[ut2mod]</a></li>
 	<li>Version 100 <a href="http://ut2004.elmuerte.com/files/ServerExt-v100.zip">[zip]</a></li>
@@ -102,6 +103,11 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 </pre>
 
 <h2>Revision history</h2>
+<h3>Changes since v102</h3>
+<ul>
+	<li>The RSS Feed configuration can now also be saved in an other config file than the RSS.ini. This has been added for GISPs, if you do not host multiple servers from the same location with different admins, then you should not use this feature.</li>
+</ul>
+
 <h3>Changes since v101</h3>
 <ul>
 	<li>Included the webadmin pages for MutRSS</li>
@@ -121,9 +127,9 @@ Copy the following files to the System directory of your UT2004 servers:
 	<li>ServerExt.int</li>
 	<li>ServerExt.u</li>
 	<li>ServerExt.ucl</li>
-	<li>ServerExtClient101.u</li>
+	<li>ServerExtClient103.u</li>
 </ul>
-Remove the old ServerExtClient.u file from you system and configuration.
+Remove the old ServerExtClient.u, ServerExtClient101.u file from you system and configuration.
 
 <hr />
 <a name="chatfilter"></a><h1>Chat Filter</h1>
@@ -613,12 +619,21 @@ After a feed has been updated the following additional entries will be saved to 
 	<dd>These are the entries received from the RSS Feed file<br />
 	It has the following format: <code>Entries=(Title=&lt;entry title&gt;,Link=&lt;entry link&gt;,Desc=&lt;entry description&gt;)</code><br />
 </dl>
-The package comes with a preconfigured RSS.ini file that contains configuration (disabled by default) for RSS feeds from:
+The package comes with a preconfigured RSS.ini.example file that contains configuration (disabled by default) for RSS feeds from:
 <ul>
 <li><a href="http://www.beyondunreal.com" target="_blank">Beyond Unreal</a></li>
 <li><a href="http://www.unrealadmin.org" target="_blank">the Unreal Admin page</a></li>
 <li><a href="http://games.slashdot.org" target="_blank">SlashDot: Games</a></li>
 </ul>
+
+<h4>Local RSS Feed configuration</h4>
+When you host multiple servers from the same location but with different admins running the servers (normal GISP concept). You might want to store the RSS Feed Configuration to the server's configuration file. <br />
+To set this up you need to add the following to the configuration of MutRSS<br />
+<pre>
+[ServerExt.MutRSS]
+RSSFeedRecordClassName=%clientpackage%.LocalRSSFeedRecord
+</pre>
+%clientpackage% is automatically renamed to the Client Side package for this release.
 
 <h2>Usage</h2>
 When installed as a mutator, and bInteractive set to true, users can use the RSS Feeds at their request via the "mutate" command.<br />

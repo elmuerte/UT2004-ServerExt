@@ -6,14 +6,14 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.16 2004/05/10 19:17:21 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.17 2004/05/10 22:10:39 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
 
 #include classes/const.inc
 
-const VERSION = 101;
+const VERSION = 102;
 /** character to replace the spaces in the config names with */
 var protected string SPACE_REPLACE;
 
@@ -83,6 +83,13 @@ var(Updating) globalconfig bool bUpdateEnabled;
 /** default minutes between updates of the RSS feeds, keep this high, 45 minutes is nice */
 var(Updating) globalconfig int iDefUpdateInterval;
 
+/**
+	sets the Feed Record class name to use for feed records, you should change this
+	when you know what your are doing
+*/
+var(AdvancedConfig) globalconfig string RSSFeedRecordClassName;
+var class<RSSFeedRecord> RSSFeedRecordClass;
+
 /** contains links to the feeds */
 var array<RSSFeedRecord> Feeds;
 /** a general HttpSock instance so we can use it's internal chaching */
@@ -98,13 +105,20 @@ var localized string msgAdded, msgDupName, msgDupLoc, msgRemoved, msgDisabledFee
 	msgEnabledFeed, msgUpdateFeed, msgDisabledMut, msgEnabledMut, msgEmpty,
 	msgDisabled, msgList, msgMutDisabled, msgListEntry, msgShowEntry, msgShow;
 /** Play Info descriptions */
-var localized string piDesc[13];
+var localized string piDesc[14];
 var localized string piOpt[2];
 var localized string msgHelp[5], msgAdminHelp[7];
 
 event PreBeginPlay()
 {
 	SPACE_REPLACE = chr(27); // ESC
+	// unless RSSFeedRecordClassName is set load the default class
+	RSSFeedRecordClass = class<RSSFeedRecord>(DynamicLoadObject(repl(RSSFeedRecordClassName, "%clientpackage%", ClientSidePackage), class'Class'));
+	if (RSSFeedRecordClass == none)
+	{
+		error(RSSFeedRecordClassName@"is not a valid RSSFeedRecord class");
+		return;
+	}
 	if (!bEnabled)
 	{
 		log(FriendlyName@"mutator is NOT enabled", name);
@@ -153,7 +167,7 @@ function LoadWebAdmin()
 	{
 		webadmin.QueryHandlerClasses.Length = webadmin.QueryHandlerClasses.Length+1;
 		webadmin.QueryHandlerClasses[webadmin.QueryHandlerClasses.Length-1] = WebQueryHandler;
-		qh = class<xWebQueryHandler>(DynamicLoadObject(WebQueryHandler, class'Class'));
+		qh = class<xWebQueryHandler>(DynamicLoadObject(repl(WebQueryHandler, "%clientpackage%", ClientSidePackage), class'Class'));
 		if (qh != none)
 		{
 			webadmin.QueryHandlers.length = webadmin.QueryHandlers.length+1;
@@ -195,8 +209,9 @@ function LoadRSSFeeds()
 	local int i, j;
 	local RSSFeedRecord item;
 
-	log("Loading RSS feeds from RSS.ini", name);
-	items = GetPerObjectNames("RSS", "RSSFeedRecord");
+	log("Loading RSS feeds from "$RSSFeedRecordClass.default.ConfigFile$".ini", name);
+	log(RSSFeedRecordClass.default.Name);
+	items = GetPerObjectNames(RSSFeedRecordClass.default.ConfigFile, string(RSSFeedRecordClass.Name));
 	if (sExlusiveFeeds != "") split(sExlusiveFeeds, ",", exclFeeds);
 	if (exclFeeds.length > 0)
 	{
@@ -218,7 +233,7 @@ function LoadRSSFeeds()
 	{
 		if (items[i] == "") continue;
 
-		item = new(None, Repl(items[i], " ", SPACE_REPLACE)) class'RSSFeedRecord';
+		item = new(None, Repl(items[i], " ", SPACE_REPLACE)) RSSFeedRecordClass;
 		if (item != none)
 		{
 			Log("Loaded RSS Feed"@item.rssHost@"-"@item.rssLocation , name);
@@ -444,7 +459,7 @@ function Mutate(string MutateString, PlayerController Sender)
 					return;
 				}
 			}
-			fr = new(None, tmp) class'RSSFeedRecord';
+			fr = new(None, tmp) RSSFeedRecordClass;
 			fr.rssHost = cmd[2];
 			fr.rssLocation = cmd[3];
 			fr.rssUpdateInterval = iDefUpdateInterval;
@@ -470,11 +485,12 @@ function bool isAdmin(PlayerController sender)
 /** open de client side RSS browser */
 function SummonPortal(PlayerController sender)
 {
-	local class<Info> portalclass;
-	local Info portal;
-	portalclass = class<Info>(DynamicLoadObject(BrowserPortal, class'Class', false));
+	local class<RSSBrowserPortal> portalclass;
+	local RSSBrowserPortal portal;
+	portalclass = class<RSSBrowserPortal>(DynamicLoadObject(repl(BrowserPortal, "%clientpackage%", ClientSidePackage), class'Class', false));
 	if (portalclass == none) return;
 	portal = spawn(portalclass, Sender);
+	portal.BrowserMenu = repl(BrowserPortal, "%clientpackage%", ClientSidePackage);
 	portal.Created();
 }
 
@@ -590,6 +606,8 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 
 	PlayInfo.AddSetting(default.FriendlyName, "bUpdateEnabled", 	default.piDesc[9],	128, 20, "CHECK");
 	PlayInfo.AddSetting(default.FriendlyName, "iDefUpdateInterval", default.piDesc[10],	128, 20, "TEXT", "5;1:99999");
+
+	PlayInfo.AddSetting(default.FriendlyName, "RSSFeedRecordClassName", default.piDesc[13],	255, 255, "TEXT");
 }
 
 static event string GetDescriptionText(string PropName)
@@ -607,6 +625,7 @@ static event string GetDescriptionText(string PropName)
 	if (PropName ~= "bBrowserEnabled") return default.piDesc[12];
 	if (PropName ~= "bUpdateEnabled") return default.piDesc[9];
 	if (PropName ~= "iDefUpdateInterval") return default.piDesc[10];
+	if (PropName ~= "RSSFeedRecordClassName") return default.piDesc[13];
 	return Super.GetDescriptionText(PropName);
 }
 
@@ -644,8 +663,9 @@ defaultproperties
 	bBrowserEnabled=true
 	bUpdateEnabled=true
 	iDefUpdateInterval=45
-	BrowserPortal="ServerExtClient.RSSBrowserPortal"
+	BrowserPortal="%clientpackage%.RSSBrowserPortal"
 	WebQueryHandler="ServerExt.RSSWebQueryHandler"
+	RSSFeedRecordClassName="%clientpackage%.RSSFeedRecord"
 
 	msgAdded="Added RSS Feed %s"
 	msgDupName="Already a RSS Feed present with that name: %s"
@@ -678,6 +698,7 @@ defaultproperties
 	piDesc[10]="Default update time"
 	piDesc[11]="Exlcusive feeds"
 	piDesc[12]="Client side browser"
+	piDesc[13]="RSS Feed Storage Record"
 
 	msgHelp[0]="RSS Feed Mutator Help:"
 	msgHelp[1]="mutate rss browser            show client side browser"

@@ -2,13 +2,13 @@ d:\dev\ut2004\ut2-code
 0.8
 [Group]
 name=ServerExt
-System\ServerExtClient101.int
-System\ServerExtClient101.u
+System\ServerExtClient103.int
+System\ServerExtClient103.u
 System\LibHTTP2.u
 System\ServerExt.u
 System\ServerExt.int
 System\ServerExt.ucl
-System\RSS.ini
+System\RSS.ini.example
 Web\ServerAdmin\rssfeeds.htm
 Web\ServerAdmin\rssfeed_edit.inc
 [Requirement]
@@ -20,10 +20,10 @@ versionURL=http://unreal.epicgames.com/
 developerURL=http://www.epicgames.com/
 [Product]
 product=ServerExt
-version=102
+version=103
 developer=Michiel "El Muerte" Hendriks
 productURL=http://ut2004.elmuerte.com/ServerExt
-versionURL=http://ut2004.elmuerte.com/files/ServerExt-v102.zip
+versionURL=http://ut2004.elmuerte.com/files/ServerExt-v103.zip
 developerURL=http://ut2004.elmuerte.com/
 readme=Help\ServerExt.html
 title=ServerExt Setup

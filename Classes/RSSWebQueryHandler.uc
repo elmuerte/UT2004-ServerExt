@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: RSSWebQueryHandler.uc,v 1.2 2004/03/27 23:13:19 elmuerte Exp $ -->
+	<!-- $Id: RSSWebQueryHandler.uc,v 1.3 2004/05/10 22:10:39 elmuerte Exp $ -->
 *******************************************************************************/
 
 class RSSWebQueryHandler extends xWebQueryHandler;
@@ -15,13 +15,22 @@ var protected MutRSS MutRSS;
 
 function bool Init()
 {
+	local int i;
 	foreach AllObjects(class'MutRSS', MutRSS)
 	{
 		if (MutRSS != none) break;
 	}
 	if (MutRSS == none)
 	{
-		// remove self
+		for (i = 0; i < QueryHandlerClasses.length; i++)
+		{
+			if (QueryHandlerClasses[i] ~= string(class))
+			{
+				QueryHandlerClasses.remove(i, 1);
+				Outer.SaveConfig();
+			}
+		}
+		return false;
 	}
 	return true;
 }
@@ -42,7 +51,7 @@ function QueryFeeds(WebRequest Request, WebResponse Response)
 
 	if (Request.GetVariable("submit", "") ~= "add")
 	{
-		fr = new(None, tmp) class'RSSFeedRecord';
+		fr = new(None, Request.GetVariable("rssHost", "")) MutRSS.RSSFeedRecordClass;
 		fr.rssEnabled = Request.GetVariable("rssEnabled", "") ~= "true";
 		fr.rssHost = Request.GetVariable("rssHost", "");
 		fr.rssLocation = Request.GetVariable("rssLocation", "");
