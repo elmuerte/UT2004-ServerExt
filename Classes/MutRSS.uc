@@ -6,14 +6,14 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.14 2004/05/05 20:54:13 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.15 2004/05/10 17:32:39 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
 
 #include classes/const.inc
 
-const VERSION = 100;
+const VERSION = 101;
 /** character to replace the spaces in the config names with */
 var protected string SPACE_REPLACE;
 
@@ -151,6 +151,7 @@ function LoadWebAdmin()
 	}
 	if (i >= webadmin.QueryHandlerClasses.Length)
 	{
+		webadmin.QueryHandlerClasses.Length = webadmin.QueryHandlerClasses.Length+1;
 		webadmin.QueryHandlerClasses[webadmin.QueryHandlerClasses.Length-1] = WebQueryHandler;
 		qh = class<xWebQueryHandler>(DynamicLoadObject(WebQueryHandler, class'Class'));
 		if (qh != none)
