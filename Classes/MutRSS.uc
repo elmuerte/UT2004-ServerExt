@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.4 2004/03/18 07:39:20 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.5 2004/03/19 10:41:06 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -17,7 +17,9 @@ var protected string SPACE_REPLACE;
 
 // Configuration options
 /** master enable switch */
-var() config bool bEnabled;
+var(Config) config bool bEnabled;
+/** the client side GUI browser window to spawn on: "mutate rss browser" */
+var(Config) config string BrowserWindow;
 
 /** should the RSS feed content be broadcasted */
 var(Broadcasting) config bool bBroadcastEnabled;
@@ -283,12 +285,20 @@ function Mutate(string MutateString, PlayerController Sender)
 			SendMessage(ColorCode(Feeds[m].TextColor)$tmp, Sender);
 			for (i = 0; (i < n) && (i < Feeds[m].Entries.Length); i++)
 			{
-				tmp = repl(msgShowEntry, "%title%", Feeds[m].Entries[i].Title);
+				tmp = repl(msgShowEntry, "%title%", UnescapeQuotes(Feeds[m].Entries[i].Title));
 				tmp = repl(tmp, "%link%", Feeds[m].Entries[i].Link);
 				tmp = repl(tmp, "%n%", i);
 				SendMessage(ColorCode(Feeds[m].TextColor)$tmp, Sender);
 			}
 			if (Feeds[m].Entries.Length == 0) SendMessage(msgEmpty, Sender);
+		}
+		else if (cmd[1] ~= "browser")
+		{
+			tmp = "";
+			tmp2 = "";
+			if (cmd.Length > 2) tmp = cmd[2];
+			if (cmd.Length > 3) tmp2 = cmd[3];
+			Sender.ClientOpenMenu(BrowserWindow, false, tmp, tmp2);
 		}
 		// Admin commands
 		else if ((cmd[1] ~= "stop") && (Sender.PlayerReplicationInfo.bAdmin))
@@ -434,9 +444,9 @@ function bool sendBroadcastMessage(int sFeed, int sOffset)
 	local string tmp;
 	if ((sFeed < 0) || (sFeed > Feeds.Length)) return false;
 	if ((sOffset < 0) || (sOffset > Feeds[sFeed].Entries.Length)) return false;
-	tmp = repl(sBroadcastFormat, "%title%", Feeds[sFeed].Entries[sOffset].Title);
+	tmp = repl(sBroadcastFormat, "%title%", UnescapeQuotes(Feeds[sFeed].Entries[sOffset].Title));
 	tmp = repl(tmp, "%links%", Feeds[sFeed].Entries[sOffset].Link);
-	tmp = repl(tmp, "%desc%", Feeds[sFeed].Entries[sOffset].Desc);
+	tmp = repl(tmp, "%desc%", UnescapeQuotes(Feeds[sFeed].Entries[sOffset].Desc));
 	tmp = repl(tmp, "%no%", sOffset);
 	tmp = repl(tmp, "%fno%", sFeed);
 	tmp = repl(tmp, "%ftitle%", Feeds[sFeed].ChannelTitle);
@@ -450,6 +460,12 @@ function bool sendBroadcastMessage(int sFeed, int sOffset)
 static function string ColorCode(color in)
 {
 	return Chr(27)$Chr(in.R)$Chr(in.G)$Chr(in.B);
+}
+
+/** */
+static function string UnescapeQuotes(string in)
+{
+	return repl(in, "\\\"", "\"");
 }
 
 static function FillPlayInfo(PlayInfo PlayInfo)
@@ -489,6 +505,7 @@ defaultproperties
 	bInteractive=true
 	bUpdateEnabled=true
 	iDefUpdateInterval=45
+	BrowserWindow="ServerExtClient.MutRSSBrowser"
 
 	msgAdded="Added RSS Feed %s"
 	msgDupName="Already a RSS Feed present with that name: %s"

@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: RSSFeedRecord.uc,v 1.4 2004/03/18 07:39:20 elmuerte Exp $ -->
+	<!-- $Id: RSSFeedRecord.uc,v 1.5 2004/03/19 10:41:06 elmuerte Exp $ -->
 *******************************************************************************/
 
 class RSSFeedRecord extends LibHTTP2.NewsFeed config(RSS);
@@ -89,7 +89,14 @@ protected function string fixHTMLSpecialsChars(coerce string in)
 	{
 		in = repl(in, HTMLSpecialChars[i].from, HTMLSpecialChars[i].to);
 	}
+	in = EscapeQuotes(in);
 	return in;
+}
+
+/** dirty fix, because of a bug in ExportText not escaping them for structs */
+static function string EscapeQuotes(string in)
+{
+	return repl(in, "\"", "\\\"");
 }
 
 defaultproperties
