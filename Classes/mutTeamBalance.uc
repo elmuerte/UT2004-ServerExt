@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: mutTeamBalance.uc,v 1.6 2004/05/29 11:40:34 elmuerte Exp $ -->
+	<!-- $Id: mutTeamBalance.uc,v 1.7 2004/09/28 08:12:37 elmuerte Exp $ -->
 *******************************************************************************/
 class mutTeamBalance extends Mutator;
 
@@ -13,9 +13,6 @@ class mutTeamBalance extends Mutator;
 var protected TeamGame TeamGame;
 /** used to check for reserved slots */
 var protected SlotManager SlotManager;
-
-/** announce this mutator to the master server */
-var(Config) config bool bAnnounce;
 
 /**
 	number seconds since the beginning of the game that the team balancer will
@@ -176,6 +173,19 @@ function NotifyLogout(Controller Exiting)
 {
 	local int i;
 	super.NotifyLogout(Exiting);
+
+	if (PlayerController(Exiting) != none)
+	{
+		for (i = 0; i < TeamRecords.length; i++)
+		{
+			if (TeamRecords[i].PC == PlayerController(Exiting))
+			{
+				TeamRecords.remove(i, 1);
+				return;
+			}
+		}
+	}
+
 	if (!bActive) return;
 	if (bOnlyBalanceOnRequest) return;
 	if (Level.Game.bGameEnded) return;
@@ -209,11 +219,14 @@ event Timer()
 	Balance();
 }
 
-/** check if a PC switched teams and if the switch is allowed */
-function PCTeamSwitch(PlayerController PC)
+/**
+	check if a PC switched teams and if the switch is allowed. Returns true
+	when the player switched team again
+*/
+function bool PCTeamSwitch(PlayerController PC)
 {
 	local int i;
-	if (!bActive) return;
+	if (!bActive) return false;
 	for (i = 0; i < TeamRecords.length; i++)
 	{
 		if (TeamRecords[i].PC == PC) break;
@@ -240,13 +253,14 @@ function PCTeamSwitch(PlayerController PC)
 				{
 					if (bDebug) log("DEBUG: force player to old team", name);
 					TeamRecords[i].PC.ServerChangeTeam(TeamRecords[i].Team);
-					return;
+					return true;
 				}
 			}
 		}
 		else if (bBotsFill) CorrectBots();
 		TeamRecords[i].Team = TeamRecords[i].PC.PlayerReplicationInfo.Team.TeamIndex;
 	}
+	return false;
 }
 
 /** return true when the teams are not even, incTeamX modifies the team difference
@@ -492,17 +506,9 @@ function AddBotToTeam(UnrealTeamInfo Team, optional string botname)
 }
 */
 
-/** add information to the server details listing */
-function GetServerDetails( out GameInfo.ServerResponseLine ServerState )
-{
-	if (bAnnounce) super.GetServerDetails(ServerState);
-}
-
 static function FillPlayInfo(PlayInfo PlayInfo)
 {
 	super.FillPlayInfo(PlayInfo);
-	PlayInfo.AddSetting(default.PIgroup, "bAnnounce",				default.PIdesc[0], 175, 0, "Check",,, True);
-
 	PlayInfo.AddSetting(default.PIgroup, "fLingerTime",				default.PIdesc[1], 100, 0, "Text", "5;0:999",, True);
 	PlayInfo.AddSetting(default.PIgroup, "iSizeThreshold",			default.PIdesc[2],  75, 0, "Text", "3;0:999",, True);
 	PlayInfo.AddSetting(default.PIgroup, "bIgnoreWinning",			default.PIdesc[3],  75, 0, "Check",,, True);
@@ -524,8 +530,6 @@ static event string GetDescriptionText(string PropName)
 {
 	switch (PropName)
 	{
-		case "bAnnounce":				return default.PIhelp[0];
-
 		case "fLingerTime":				return default.PIhelp[1];
 		case "iSizeThreshold":			return default.PIhelp[2];
 		case "bIgnoreWinning":			return default.PIhelp[3];
@@ -548,10 +552,8 @@ static event string GetDescriptionText(string PropName)
 defaultProperties
 {
 	GroupName="Team Balancer"
-	FriendlyName="Team Balancer"
+	FriendlyName="Team Balancer (ServerExt)"
 	Description="Make sure the teams have equal size when the odds are off"
-
-	bAnnounce=true
 
 	fLingerTime=0
 	iSizeThreshold=2
@@ -577,8 +579,8 @@ defaultProperties
 
 	PIgroup="Team Balancer"
 
-	PIdesc[0]="Announce to MS"
-	PIhelp[0]="Announce this mutator to the master server and server details"
+	PIdesc[0]=""
+	PIhelp[0]=""
 	PIdesc[1]="Initial in active time"
 	PIhelp[1]="Number seconds since the beginning of the game that the team balancer will remain inactive."
 	PIdesc[2]="Size threshold"
