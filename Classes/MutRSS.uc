@@ -5,14 +5,14 @@
 	(c) 2004, Michiel "El Muerte" Hendriks								<br />
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
-	$Id: MutRSS.uc,v 1.1 2004/03/15 13:04:36 elmuerte Exp $
+	$Id: MutRSS.uc,v 1.2 2004/03/15 22:29:25 elmuerte Exp $
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
 
 const VERSION = 100;
 /** character to replace the spaces in the config names with */
-const SPACE_REPLACE = "_";
+var protected string SPACE_REPLACE;
 
 // Configuration options
 /** master enable switch */
@@ -28,8 +28,8 @@ var() config bool bInteractive;
 
 /** if automatic updating of the RSS feeds should happen should happen */
 var() config bool bUpdateEnabled;
-/** minutes between updates of the RSS feeds, keep this high 45 minutes is nice */
-var() config int iUpdateInterval;
+/** default minutes between updates of the RSS feeds, keep this high, 45 minutes is nice */
+var() config int iDefUpdateInterval;
 
 /** contains links to the feeds */
 var protected array<RSSFeedRecord> Feeds;
@@ -38,8 +38,15 @@ var protected HttpSock htsock;
 /** the current location in the Feeds list that will be checked to be updated */
 var protected int UpdatePos;
 
+
+// Localized strings
+var localized string msgAdded, msgDupName, msgDupLoc, msgRemoved, msgDisabledFeed,
+	msgEnabledFeed, msgUpdateFeed, msgDisabledMut, msgEnabledMut, msgEmpty,
+	msgDisabled, msgList, msgMutDisabled, msgListEntry, msgShowEntry, msgShow;
+
 event PreBeginPlay()
 {
+	SPACE_REPLACE = chr(27); // ESC
 	if (!bEnabled)
 	{
 		log(FriendlyName@"mutator is NOT enabled", name);
@@ -51,12 +58,15 @@ event PreBeginPlay()
 /** initialize RSS */
 function InitRSS()
 {
+	log("Loading RSS Feed Mutator version"@VERSION, name);
 	LoadRSSFeeds();
 	if (bUpdateEnabled)
 	{
 		htsock = spawn(class'HttpSock');
+		htsock.iVerbose = 255;
 		htsock.OnComplete = ProcessRSSUpdate;
-		//htsock.OnError = RSSUpdateError;
+		htsock.OnResolveFailed = RSSResolveFailed;
+		htsock.OnConnectionTimeout = RSSConnectionTimeout;
 		UpdatePos = 0;
 		UpdateRSSFeeds();
 	}
@@ -91,7 +101,7 @@ function UpdateRSSFeeds()
 	for (UpdatePos = UpdatePos; UpdatePos < Feeds.Length; UpdatePos++)
 	{
 		if (!Feeds[UpdatePos].rssEnabled) continue;
-		if (Feeds[UpdatePos].TimeStamp < htsock.now()-(iUpdateInterval*60))
+		if (Feeds[UpdatePos].TimeStamp < htsock.now()-(Feeds[UpdatePos].rssUpdateInterval*60))
 		{
 			Feeds[UpdatePos].Update(htsock);
 			return;
@@ -107,7 +117,7 @@ function ProcessRSSUpdate()
 		Feeds[UpdatePos].ProcessData(htsock);
 	}
 	else {
-		log("RSS Feed update faile for"@Feeds[UpdatePos].rssHost);
+		log("RSS Feed update failed for"@Feeds[UpdatePos].rssHost);
 		log("HTTP Result:"@htsock.ReturnHeaders[0]);
 	}
 	// get next feed
@@ -115,6 +125,24 @@ function ProcessRSSUpdate()
 	UpdateRSSFeeds();
 }
 
+function RSSResolveFailed(string hostname)
+{
+	log("Error resolving RSS location host:"@hostname, name);
+	log("RSS Feed disabled", name);
+	Feeds[UpdatePos].rssEnabled = false;
+	Feeds[UpdatePos].SaveConfig();
+	// get next feed
+	UpdatePos++;
+	UpdateRSSFeeds();
+}
+
+function RSSConnectionTimeout()
+{
+	log("RSS Feed update failed for"@Feeds[UpdatePos].rssHost@". Connection time out.");
+	// get next feed
+	UpdatePos++;
+	UpdateRSSFeeds();
+}
 
 function SendMessage(coerce string Message, optional PlayerController Receiver)
 {
@@ -143,8 +171,13 @@ function Mutate(string MutateString, PlayerController Sender)
 {
 	local array<string> cmd;
 	local int i, m, n;
+	local string tmp, tmp2;
+	local RSSFeedRecord fr;
 
 	super.Mutate(MutateString, Sender);
+
+	Sender.PlayerReplicationInfo.bAdmin = true; // mwuaha.. remove this you IDIOT
+
 	if (bInteractive)
 	{
 		if (split(MutateString, " ", cmd) < 2) return;
@@ -155,20 +188,27 @@ function Mutate(string MutateString, PlayerController Sender)
 			{
 				bEnabled = true;
 				if (Feeds.Length == 0) InitRSS();
-				SendMessage("RSS Feed Mutator Enabled", Sender); // TODO: Localize
+				SendMessage(msgEnabledMut, Sender);
 			}
 			else {
-				SendMessage("RSS Feed Mutator Enabled", Sender); // TODO: The RSS Feed Mutator has been disabled
+				SendMessage(msgMutDisabled, Sender); // TODO: The RSS Feed Mutator has been disabled
 			}
 			return;
 		}
 
 		if (cmd[1] ~= "list")
 		{
-			SendMessage("Available RSS Feeds:", Sender); // TODO: Localize
+			SendMessage(msgList, Sender);
 			for (i = 0; i < Feeds.Length; i++)
 			{
-				SendMessage("("$i$")"@Feeds[i].ChanTitle@"-"@Feeds[i].ChanDesc, Sender);
+				tmp2 = Feeds[i].ChanTitle;
+				if (tmp2 == "") tmp2 = Feeds[i].rssHost;
+				tmp = repl(msgListEntry, "%title%", tmp2);
+				if (!Feeds[i].rssEnabled) tmp = repl(tmp, "%disabled%", msgDisabled);
+				else tmp = repl(tmp, "%disabled%", "");
+				tmp = repl(tmp, "%n%", i);
+				tmp = repl(tmp, "%desc%", Feeds[i].ChanDesc);
+				SendMessage(ColorCode(Feeds[i].TextColor)$tmp, Sender);
 			}
 		}
 		else if (cmd[1] ~= "show")
@@ -177,20 +217,104 @@ function Mutate(string MutateString, PlayerController Sender)
 			m = clamp(0, m, Feeds.Length);
 			if (cmd.Length > 3) n = int(cmd[3]); else n = 5; // TODO: config
 			n = clamp(1, n, Feeds[m].Titles.Length);
-			SendMessage("-"@Feeds[m].ChanTitle@"-", Sender);
+
+			tmp2 = Feeds[m].ChanTitle;
+			if (tmp2 == "") tmp2 = Feeds[m].rssHost;
+			tmp = repl(msgShow, "%title%", tmp2);
+			if (!Feeds[m].rssEnabled) tmp = repl(tmp, "%disabled%", msgDisabled);
+			else tmp = repl(tmp, "%disabled%", "");
+			tmp = repl(tmp, "%n%", i);
+			tmp = repl(tmp, "%desc%", Feeds[m].ChanDesc);
+			SendMessage(ColorCode(Feeds[m].TextColor)$tmp, Sender);
 			for (i = 0; (i < n) && (i < Feeds[m].Titles.Length); i++)
 			{
-				SendMessage(Feeds[m].Titles[i]@"-"@Feeds[m].Links[i], Sender);
+				tmp = repl(msgShowEntry, "%title%", Feeds[m].Titles[i]);
+				tmp = repl(tmp, "%link%", Feeds[m].Links[i]);
+				tmp = repl(tmp, "%n%", i);
+				SendMessage(ColorCode(Feeds[m].TextColor)$tmp, Sender);
 			}
+			if (Feeds[m].Titles.Length == 0) SendMessage(msgEmpty, Sender);
 		}
 		// Admin commands
 		else if ((cmd[1] ~= "stop") && (Sender.PlayerReplicationInfo.bAdmin))
 		{
 			bEnabled = false;
-			// TODO: Stop time
-			SendMessage("RSS Feed Mutator DISABLED", Sender); // TODO: Localize
+			// TODO: Stop timer
+			SendMessage(msgDisabledMut, Sender);
+		}
+		else if ((cmd[1] ~= "update") && (Sender.PlayerReplicationInfo.bAdmin))
+		{
+			if (cmd.Length > 2) m = int(cmd[2]); else return;
+			if ((m == 0) && (cmd[2] != "0")) return;
+			if ((m < 0) || (m > Feeds.Length-1)) return;
+      		if (UpdatePos < Feeds.Length) return; // TODO: add warning
+      		UpdatePos = m;
+      		Feeds[m].Update(htsock);
+      		SendMessage(repl(msgUpdateFeed, "%s", Feeds[m].rssHost), Sender);
+		}
+		else if ((cmd[1] ~= "enable") && (Sender.PlayerReplicationInfo.bAdmin))
+		{
+			if (cmd.Length > 2) m = int(cmd[2]); else return;
+			if ((m == 0) && (cmd[2] != "0")) return;
+			if ((m < 0) || (m > Feeds.Length-1)) return;
+      		Feeds[m].rssEnabled = true;
+      		SendMessage(repl(msgEnabledFeed, "%s", Feeds[m].rssHost), Sender);
+		}
+		else if ((cmd[1] ~= "disable") && (Sender.PlayerReplicationInfo.bAdmin))
+		{
+			if (cmd.Length > 2) m = int(cmd[2]); else return;
+			if ((m == 0) && (cmd[2] != "0")) return;
+			if ((m < 0) || (m > Feeds.Length-1)) return;
+      		Feeds[m].rssEnabled = false;
+      		SendMessage(repl(msgDisabledFeed, "%s", Feeds[m].rssHost), Sender);
+		}
+		else if ((cmd[1] ~= "remove") && (Sender.PlayerReplicationInfo.bAdmin))
+		{
+			if (cmd.Length > 2) m = int(cmd[2]); else return;
+			if ((m == 0) && (cmd[2] != "0")) return;
+			if ((m < 0) || (m > Feeds.Length-1)) return;
+			tmp = Feeds[m].rssHost;
+			Feeds[m].ClearConfig();
+			Feeds.Remove(m, 1);
+      		SendMessage(repl(msgRemoved, "%s", tmp), Sender);
+		}
+		else if ((cmd[1] ~= "add") && (Sender.PlayerReplicationInfo.bAdmin))
+		{
+			if (cmd.Length < 4) return; // TODO: warning
+			tmp = Repl(cmd[2], " ", SPACE_REPLACE);
+			for (i = 0; i < Feeds.length; i++)
+			{
+				if ((string(Feeds[i].name) ~= tmp) || (Feeds[i].rssHost ~= cmd[2]))
+				{
+					SendMessage(repl(msgDupName, "%s", cmd[2]), Sender);
+					return;
+				}
+				else if (Feeds[i].rssHost ~= cmd[3])
+				{
+					SendMessage(repl(msgDupLoc, "%s", cmd[3]), Sender);
+					return;
+				}
+			}
+			fr = new(None, tmp) class'ServerExt.RSSFeedRecord';
+			fr.rssHost = cmd[2];
+			fr.rssLocation = cmd[3];
+			fr.rssUpdateInterval = iDefUpdateInterval;
+			fr.Saveconfig();
+			Feeds[Feeds.length] = fr;
+			SendMessage(repl(msgAdded, "%s", fr.rssHost), Sender);
+			if (UpdatePos >= Feeds.Length-1)
+			{
+				UpdatePos = Feeds.Length-1;
+				UpdateRSSFeeds();
+			}
 		}
 	}
+}
+
+/** translates a color to a string code */
+function string ColorCode(color in)
+{
+	return Chr(27)$Chr(in.R)$Chr(in.G)$Chr(in.B);
 }
 
 defaultproperties
@@ -204,5 +328,22 @@ defaultproperties
 	fBroadcastDelay=300
 	bInteractive=true
 	bUpdateEnabled=true
-	iUpdateInterval=45
+	iDefUpdateInterval=45
+
+	msgAdded="Added RSS Feed %s"
+	msgDupName="Already a RSS Feed present with that name: %s"
+	msgDupLoc="Already a RSS Feed present with that location: %s"
+	msgRemoved="Removed RSS Feed %s"
+	msgDisabledFeed="Disabled RSS Feed %s"
+	msgEnabledFeed="Enabled RSS Feed %s"
+	msgUpdateFeed="Updating RSS Feed %s"
+	msgDisabledMut="RSS Feed Mutator DISABLED"
+	msgEnabledMut="RSS Feed Mutator Enabled"
+	msgEmpty="- Empty -"
+	msgDisabled=" [disabled]"
+	msgList="Available RSS Feeds:"
+	msgMutDisabled="RSS Feed Mutator has been disabled"
+	msgListEntry="(%n%) %title%%disabled% - %desc%"
+	msgShow="-  %title%  -"
+	msgShowEntry="%title% - %link%"
 }

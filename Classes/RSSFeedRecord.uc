@@ -5,10 +5,10 @@
 	(c) 2004, Michiel "El Muerte" Hendriks								<br />
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
-	$Id: RSSFeedRecord.uc,v 1.1 2004/03/15 13:04:36 elmuerte Exp $
+	$Id: RSSFeedRecord.uc,v 1.2 2004/03/15 22:29:25 elmuerte Exp $
 *******************************************************************************/
 
-class RSSFeedRecord extends NewsFeed PerObjectConfig config(RSS);
+class RSSFeedRecord extends LibHTTP2.NewsFeed PerObjectConfig config(RSS);
 
 /** name of this object */
 var config string rssHost;
@@ -16,6 +16,10 @@ var config string rssHost;
 var config string rssLocation;
 /** true if this feed is enabled */
 var config bool rssEnabled;
+/** minutes between updates, make this a nice value like 45 minutes */
+var config int rssUpdateInterval;
+/** the color to use when displaying the content of this feed */
+var config color TextColor;
 
 // RSS Entries
 /** RSS Channel values */
@@ -111,6 +115,8 @@ protected function string fixHTMLSpecialsChars(coerce string in)
 defaultproperties
 {
 	rssEnabled=true
+	rssUpdateInterval=45
+	TextColor=(R=255,G=255,B=0)
 
 	HTMLSpecialChars(0)=(from="&amp;",to="&")
 	HTMLSpecialChars(1)=(from="&quote;",to="\"")
