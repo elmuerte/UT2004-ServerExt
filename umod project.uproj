@@ -8,6 +8,9 @@ System\LibHTTP2.u
 System\ServerExt.u
 System\ServerExt.int
 System\ServerExt.ucl
+System\RSS.ini
+Web\ServerAdmin\rssfeeds.htm
+Web\ServerAdmin\rssfeed_edit.inc
 [Requirement]
 product=UT2004
 version=3100
@@ -17,7 +20,7 @@ versionURL=http://unreal.epicgames.com/
 developerURL=http://www.epicgames.com/
 [Product]
 product=ServerExt
-version=100
+version=102
 developer=Michiel "El Muerte" Hendriks
 productURL=http://ut2004.elmuerte.com/ServerExt
 versionURL=http://ut2004.elmuerte.com/files/ServerExt-v101.zip
