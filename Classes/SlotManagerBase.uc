@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: SlotManagerBase.uc,v 1.2 2004/05/17 21:19:04 elmuerte Exp $ -->
+	<!-- $Id: SlotManagerBase.uc,v 1.3 2004/09/27 07:58:23 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManagerBase extends Info abstract;
 
@@ -50,7 +50,7 @@ function LoadWebAdmin()
 	{
 		webadmin.QueryHandlerClasses.Length = webadmin.QueryHandlerClasses.Length+1;
 		webadmin.QueryHandlerClasses[webadmin.QueryHandlerClasses.Length-1] = WebQueryHandler;
-		qh = class<xWebQueryHandler>(DynamicLoadObject(repl(WebQueryHandler, "%clientpackage%", ClientSidePackage), class'Class'));
+		qh = class<xWebQueryHandler>(DynamicLoadObject(WebQueryHandler, class'Class'));
 		if (qh != none)
 		{
 			webadmin.QueryHandlers.length = webadmin.QueryHandlers.length+1;

@@ -2,9 +2,11 @@ d:\dev\ut2004\ut2-code
 0.8
 [Group]
 name=ServerExt
-System\ServerExtClient103.int
-System\ServerExtClient103.u
-System\LibHTTP2.u
+System\ServerExtClientA.int
+System\ServerExtClientA.u
+System\ServerExtClientB.int
+System\ServerExtClientB.u
+System\LibHTTP3.u
 System\ServerExt.u
 System\ServerExt.int
 System\ServerExt.ucl
@@ -22,10 +24,10 @@ versionURL=http://unreal.epicgames.com/
 developerURL=http://www.epicgames.com/
 [Product]
 product=ServerExt
-version=105b
+version=106
 developer=Michiel "El Muerte" Hendriks
 productURL=http://ut2004.elmuerte.com/ServerExt
-versionURL=http://ut2004.elmuerte.com/files/ServerExt-v105b-ut4mod.zip
+versionURL=http://ut2004.elmuerte.com/files/ServerExt-v106-ut4mod.zip
 developerURL=http://ut2004.elmuerte.com/
 readme=Help\ServerExt.html
 title=ServerExt Setup

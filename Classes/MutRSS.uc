@@ -6,14 +6,14 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.20 2004/05/31 18:21:08 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.21 2004/09/27 07:58:23 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
 
 #include classes/const.inc
 
-const VERSION = 102;
+const VERSION = 104;
 /** character to replace the spaces in the config names with */
 var string SPACE_REPLACE;
 
@@ -115,7 +115,7 @@ event PreBeginPlay()
 {
 	SPACE_REPLACE = chr(27); // ESC
 	// unless RSSFeedRecordClassName is set load the default class
-	RSSFeedRecordClass = class<RSSFeedRecord>(DynamicLoadObject(repl(RSSFeedRecordClassName, "%clientpackage%", ClientSidePackage), class'Class'));
+	RSSFeedRecordClass = class<RSSFeedRecord>(DynamicLoadObject(repl(RSSFeedRecordClassName, "%clientpackage%", ClientSidePackageRSS), class'Class'));
 	if (RSSFeedRecordClass == none)
 	{
 		error(RSSFeedRecordClassName@"is not a valid RSSFeedRecord class");
@@ -130,7 +130,7 @@ event PreBeginPlay()
 	LoadWebAdmin();
 	if (bBrowserEnabled && (int(Level.EngineVersion) > 3195))
 	{
-		AddToPackageMap(ClientSidePackage);
+		AddToPackageMap(ClientSidePackageRSS);
 		AddToPackageMap(LibHTTPPackage);
 	}
 }
@@ -169,7 +169,7 @@ function LoadWebAdmin()
 	{
 		webadmin.QueryHandlerClasses.Length = webadmin.QueryHandlerClasses.Length+1;
 		webadmin.QueryHandlerClasses[webadmin.QueryHandlerClasses.Length-1] = WebQueryHandler;
-		qh = class<xWebQueryHandler>(DynamicLoadObject(repl(WebQueryHandler, "%clientpackage%", ClientSidePackage), class'Class'));
+		qh = class<xWebQueryHandler>(DynamicLoadObject(repl(WebQueryHandler, "%clientpackage%", ClientSidePackageRSS), class'Class'));
 		if (qh != none)
 		{
 			webadmin.QueryHandlers.length = webadmin.QueryHandlers.length+1;
@@ -189,7 +189,7 @@ function InitRSS()
 	if (bUpdateEnabled)
 	{
 		htsock = spawn(class'HttpSock');
-		if (htsock.VERSION < 200) Error("LibHTTP version 2 or higher required");
+		if (htsock.VERSION < 300) Error("LibHTTP version 2 or higher required");
 		htsock.OnComplete = ProcessRSSUpdate;
 		htsock.OnResolveFailed = RSSResolveFailed;
 		htsock.OnConnectionTimeout = RSSConnectionTimeout;
@@ -212,7 +212,6 @@ function LoadRSSFeeds()
 	local RSSFeedRecord item;
 
 	log("Loading RSS feeds from "$RSSFeedRecordClass.default.ConfigFile$".ini", name);
-	log(RSSFeedRecordClass.default.Name);
 	items = GetPerObjectNames(RSSFeedRecordClass.default.ConfigFile, string(RSSFeedRecordClass.Name));
 	if (sExlusiveFeeds != "") split(sExlusiveFeeds, ",", exclFeeds);
 	if (exclFeeds.length > 0)
@@ -489,10 +488,10 @@ function SummonPortal(PlayerController sender)
 {
 	local class<RSSBrowserPortal> portalclass;
 	local RSSBrowserPortal portal;
-	portalclass = class<RSSBrowserPortal>(DynamicLoadObject(repl(BrowserPortal, "%clientpackage%", ClientSidePackage), class'Class', false));
+	portalclass = class<RSSBrowserPortal>(DynamicLoadObject(repl(BrowserPortal, "%clientpackage%", ClientSidePackageRSS), class'Class', false));
 	if (portalclass == none) return;
 	portal = spawn(portalclass, Sender);
-	portal.BrowserMenu = repl(BrowserMenu, "%clientpackage%", ClientSidePackage);
+	portal.BrowserMenu = repl(BrowserMenu, "%clientpackage%", ClientSidePackageRSS);
 	portal.Created();
 }
 
@@ -530,7 +529,7 @@ function Timer()
 		}
 
 		// send the group
-		for (j = 0; (j < iGroupSize) && (j < Feeds[nFeed].Entries.length); j++)
+		for (j = 0; (j < iGroupSize) && (nOffset < Feeds[nFeed].Entries.length); j++)
 		{
 			if (sendBroadcastMessage(nFeed, nOffset)) msgSend++;
 			if (BroadcastMethod != BM_Sequential) nOffset++;
@@ -539,14 +538,14 @@ function Timer()
 		if (BroadcastMethod == BM_Sequential)
 		{
 			j = getNextFeed(nFeed);
-			if (nFeed == j) nOffset++;
+			if (nFeed == j) nOffset += iGroupSize;
 			else nFeed = j;
 		}
 	}
 
 	if (BroadcastMethod == BM_Sequential)
 	{
-		nOffset += iGroupSize;
+		//nOffset += iGroupSize;
 		if (msgSend == 0) nOffset = 0; // wrap
 	}
 }

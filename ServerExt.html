@@ -15,6 +15,7 @@ The ServerExt package is being developed by <a href="http://wiki.beyondunreal.co
 <h2>Downloads</h2>
 New versions of this package can be downloaded from <a href="http://ut2004.elmuerte.com/ServerExt">the ServerExt website</a>.<br />
 <ul>
+	<li>Version 106 <a href="http://ut2004.elmuerte.com/files/ServerExt-v106.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v106-ut4mod.zip">[ut4mod]</a></li>
 	<li>Version 105b <a href="http://ut2004.elmuerte.com/files/ServerExt-v105b.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v105b-ut4mod.zip">[ut4mod]</a></li>
 	<li>Version 105a <a href="http://ut2004.elmuerte.com/files/ServerExt-v105a.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v105a-ut4mod.zip">[ut4mod]</a></li>
 	<li>Version 105 <a href="http://ut2004.elmuerte.com/files/ServerExt-v105.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v105-ut4mod.zip">[ut4mod]</a></li>
@@ -109,6 +110,16 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 </pre>
 
 <h2>Revision history</h2>
+<h3>Changes since v105b</h3>
+<ul>
+	<li>Fixed BM_Sequential mode for mutRSS</li>
+	<li>Client packages split up into two: one for ChatFilter and one for mutRSS</li>
+	<li>mutRSS now uses LibHTTP3</li>
+	<li>Fixed recursion issue in ChatFilter (e.g. replace xxx -> x doesn't crash the server anymore)<li>
+	<li>Fixed an issue with spaces in bad words</li>
+	<li>Fixed warning mutator for ChatFilter</li>
+	<li>Added a new option: bWarnVoting, only when this is set the voting mutator will be used and allow people to vote on a judgement of a player.</li>
+</ul>
 
 <h3>Changes since v105a</h3>
 <ul>
@@ -161,14 +172,17 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 <h2>General Installation</h2>
 Copy the following files to the System directory of your UT2004 servers:
 <ul>
-	<li>LibHTTP2.u</li>
+	<li>LibHTTP3.u</li>
 	<li>ServerExt.int</li>
 	<li>ServerExt.u</li>
 	<li>ServerExt.ucl</li>
-	<li>ServerExtClient103.u</li>
-	<li>ServerExtClient103.int</li>
+	<li>ServerExtClientA.u</li>
+	<li>ServerExtClientA.int</li>
+	<li>ServerExtClientB.u</li>
+	<li>ServerExtClientB.int</li>
+	<li>wUtils.u</li>
 </ul>
-Remove the old ServerExtClient.u, ServerExtClient101.u file from you system and configuration.<br />
+Remove the old ServerExtClient.u, ServerExtClient10*.u files from you system and configuration.<br />
 <br />
 Copy the following files to the Web\ServerAdmin directory of your UT2004 servers:
 <ul>
@@ -894,7 +908,7 @@ BalanceMethod=BM_Newest
 </dl>
 
 <hr />
-<h2>License for LibHTTP2</h2>
+<h2>License for LibHTTP3</h2>
 <pre>
 <a href="http://wiki.beyondunreal.com/wiki/LesserOpenUnrealModLicense">Lesser Open Unreal Mod License</a>
 Version 1, March 2004

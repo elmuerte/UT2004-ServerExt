@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ChatFilter.uc,v 1.6 2004/05/31 18:21:08 elmuerte Exp $ -->
+	<!-- $Id: ChatFilter.uc,v 1.7 2004/09/27 07:58:23 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -35,10 +35,6 @@ enum BNA
 	BNA_SessionBan
 };
 
-// Misc
-/** use a friendly message when removing the player */
-//var(Config) config bool bFriendlyMessage;
-
 // SPAM check
 /** timeframe length, in seconds, after each timeframe the score is reset */
 var(Config) config float fTimeFrame;
@@ -58,6 +54,7 @@ var(Config) config string CencorWord;
 var(Config) config int iScoreSwear;
 /** bad words are a replacement table */
 var(Config) config bool bUseReplacementTable; // BadWords=> replace;with
+
 // Nickname check
 /** check for bad nicknames */
 var(Config) config bool bCheckNicknames;
@@ -84,12 +81,15 @@ var(Config) config ChatFilterAction WarningAction;
 var(Config) config int iMaxWarnings;
 /** minimum percentage of votes needed for user action */
 var(Config) config float fMinVote;
+/** allow other players to vote to take action when somebody has been warned */
+var(Config) config bool bWarnVoting;
 
 // CFA_Mute
 /** the message to show when muted */
 var(Config) config string sMuteMessage;
 /** show the muted hud */
 var(Config) config bool bShowMuted;
+
 // logging
 /** perform chatloggin */
 var(Config) config bool bLogChat;
@@ -145,6 +145,7 @@ struct ChatRecord
 /** records for the current players */
 var array<ChatRecord> ChatRecords;
 
+/** warning mutator to spawn when warn voting is enabled */
 var string WarningMutClass;
 
 /** message dispatcher class to spawn */
@@ -152,7 +153,7 @@ var class<CFMsgDispatcher> MessageDispatcherClass;
 
 var float LastMsgTick;
 
-var localized string PICat, PIlabel[22], PIdesc[22];
+var localized string PICat, PIlabel[23], PIdesc[23];
 
 /** Find a player record and create a new one when needed */
 function int findChatRecord(Actor Sender, optional bool bCreate)
@@ -180,29 +181,20 @@ function int findChatRecord(Actor Sender, optional bool bCreate)
 /** Filter bad words out a string */
 function string filterString(coerce string Msg, int cr)
 {
-	local array<string> parts;
-	local int i,j,k;
+	local int i,k;
 
 	if (cr == -1) return Msg;
 	if (bUseReplacementTable) return filterStringTable(Msg, cr);
-	if (split(msg," ", parts) == 0) return "";
 	for (i=0; i<BadWords.Length; i++)
 	{
-		for (j = 0; j < parts.length; j++)
+		k = InStr(Caps(msg), Caps(BadWords[i]));
+		while (k > -1)
 		{
-			k = InStr(Caps(parts[j]), Caps(BadWords[i]));
-			while (k > -1)
-			{
-				parts[j] = Left(parts[j], k)$CencorWord$Mid(parts[j], k+Len(BadWords[i]));
-				ChatRecords[cr].score += iScoreSwear;
-				k = InStr(Caps(parts[j]), Caps(BadWords[i]));
-			}
+			msg = Left(msg, k)$chr(1)$Mid(msg, k+Len(BadWords[i]));
+			ChatRecords[cr].score += iScoreSwear;
+			k = InStr(Caps(msg), Caps(BadWords[i]));
 		}
-	}
-	msg = parts[0];
-	for (i = 1; i < parts.length; i++)
-	{
-		msg = msg@parts[i];
+		msg = repl(msg, chr(1), CencorWord);
 	}
 	return Msg;
 }
@@ -210,28 +202,19 @@ function string filterString(coerce string Msg, int cr)
 /** Filter bad words out a string, using replacement table */
 function string filterStringTable(coerce string Msg, int cr)
 {
-	local array<string> parts;
-	local int i,j,k;
+	local int i,k;
 
 	if (cr == -1) return Msg;
-	if (split(msg," ", parts) == 0) return "";
 	for (i=0; i<ReplacementTable.Length; i++)
 	{
-		for (j = 0; j < parts.length; j++)
+		k = InStr(Caps(Msg), Caps(ReplacementTable[i].from));
+		while (k > -1)
 		{
-			k = InStr(Caps(parts[j]), Caps(ReplacementTable[i].from));
-			while (k > -1)
-			{
-				parts[j] = Left(parts[j], k)$ReplacementTable[i].to$Mid(parts[j], k+Len(ReplacementTable[i].from));
-				ChatRecords[cr].score += iScoreSwear;
-				k = InStr(Caps(parts[j]), Caps(ReplacementTable[i].from));
-			}
+			Msg = Left(Msg, k)$chr(1)$Mid(Msg, k+Len(ReplacementTable[i].from));
+			ChatRecords[cr].score += iScoreSwear;
+			k = InStr(Caps(Msg), Caps(ReplacementTable[i].from));
 		}
-	}
-	msg = parts[0];
-	for (i = 1; i < parts.length; i++)
-	{
-		msg = msg@parts[i];
+		Msg = repl(msg, chr(1), ReplacementTable[i].to);
 	}
 	return Msg;
 }
@@ -246,10 +229,12 @@ function judgeLog(string msg)
 /** Initial judge */
 function judge(PlayerController Sender, int cr)
 {
+	local int x;
 	if ((Sender != none) && (MessagingSpectator(Sender) == none))
 	{
 		if (ChatRecords[cr].score > iKillScore)
 		{
+			x = ChatRecords[cr].score;
 			ChatRecords[cr].score = 0;
 			switch (KillAction)
 			{
@@ -270,7 +255,7 @@ function judge(PlayerController Sender, int cr)
 										Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 										return;
 				case CFA_Defrag:		judgeLog("Defragging player"@Sender.PlayerReplicationInfo.PlayerName);
-										Sender.PlayerReplicationInfo.Score -= 1;
+										Sender.PlayerReplicationInfo.Score -= x;
 										return;
 				case CFA_Warn:			judgeLog("Warning player"@Sender.PlayerReplicationInfo.PlayerName);
 										ChatRecords[cr].warnings++;
@@ -324,7 +309,7 @@ function judgeWarning(PlayerController Sender, int cr)
 										Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 										break;
 				case CFA_Defrag:		judgeLog("Defragging player"@Sender.PlayerReplicationInfo.PlayerName@"iMaxWarning exceeded:"@(ChatRecords[cr].warnings > iMaxWarnings)@"Requested:"@ChatRecords[cr].bUserRequest);
-										Sender.PlayerReplicationInfo.Score -= 1;
+										Sender.PlayerReplicationInfo.Score -= ChatRecords[cr].warnings*iKillScore;
 										break;
 				case CFA_Mute:			judgeLog("Muting player"@Sender.PlayerReplicationInfo.PlayerName@"iMaxWarning exceeded:"@(ChatRecords[cr].warnings > iMaxWarnings)@"Requested:"@ChatRecords[cr].bUserRequest);
 										Sender.ClearProgressMessages();
@@ -345,7 +330,7 @@ function judgeWarning(PlayerController Sender, int cr)
 				Sender.SetProgressTime(6);
 	  			Sender.SetProgressMessage(0, sWarningNotification, class'Canvas'.Static.MakeColor(255,0,0));
 			}
-			if (sWarningBroadcast != "")
+			if (sWarningBroadcast != "" && bWarnVoting)
 			{
 				tmp = sWarningBroadcast;
 				ReplaceText(tmp, "%s", Sender.PlayerReplicationInfo.PlayerName);
@@ -503,10 +488,10 @@ event PreBeginPlay()
 		GameInformation();
 	}
 	Level.Game.BroadcastHandler.RegisterBroadcastHandler(Self);
-	if (KillAction == CFA_Warn)
+	if (KillAction == CFA_Warn && bWarnVoting)
 	{
 		log("Launching warning mutator", name);
-		Level.Game.AddMutator(WarningMutClass, true);
+		Level.Game.AddMutator(repl(WarningMutClass, "%clientpackage%", ClientSidePackageChatFilter), true);
 	}
 	if (bUseReplacementTable)
 	{
@@ -524,8 +509,8 @@ event PreBeginPlay()
 	}
 	if ((bCheckNicknames && (BadnickAction == BNA_Request)) || bShowMuted)
 	{
-		if (int(Level.EngineVersion) > 3195) AddToPackageMap(ClientSidePackage);
-		MessageDispatcherClass = class<CFMsgDispatcher>(DynamicLoadObject(ClientSidePackage$".CFMsgDispatcher", class'Class'));
+		if (int(Level.EngineVersion) > 3195) AddToPackageMap(ClientSidePackageChatFilter);
+		MessageDispatcherClass = class<CFMsgDispatcher>(DynamicLoadObject(ClientSidePackageChatFilter$".CFMsgDispatcher", class'Class'));
 	}
 	SetTimer(fTimeFrame, true);
 	enable('Tick');
@@ -650,7 +635,8 @@ static function FillPlayInfo(PlayInfo PI)
 	PI.AddSetting(default.PICat, "sWarningBroadcast", default.PIlabel[14], 10, 12, "Text", "999");
 	PI.AddSetting(default.PICat, "WarningAction", default.PIlabel[15], 10, 13, "Select", "CFA_Nothing;Nothing;CFA_Kick;Kick player;CFA_Ban;Ban player;CFA_SessionBan;Ban player this session;CFA_Defrag;Remove one point;CFA_Mute;Mute player for this game");
 	PI.AddSetting(default.PICat, "iMaxWarnings", default.PIlabel[16], 10, 14, "Text", "5");
-	PI.AddSetting(default.PICat, "fMinVote", default.PIlabel[17], 10, 15, "Text", "5;0:1");
+	PI.AddSetting(default.PICat, "bWarnVoting", default.PIlabel[22], 10, 15, "Check");
+	PI.AddSetting(default.PICat, "fMinVote", default.PIlabel[17], 10, 16, "Text", "5;0:1");
 
 	PI.AddSetting(default.PICat, "sMuteMessage", default.PIlabel[18], 10, 16, "Text", "999");
 	PI.AddSetting(default.PICat, "bShowMuted", default.PIlabel[19], 10, 17, "Check");
@@ -686,6 +672,7 @@ static event string GetDescriptionText(string PropName)
 		case "bShowMuted": return default.PIdesc[19];
 		case "bLogChat": return default.PIdesc[20];
 		case "sFileFormat": return default.PIdesc[21];
+		case "bWarnVoting": return default.PIdesc[22];
 	}
 	return "";
 }
@@ -735,6 +722,7 @@ defaultproperties
 	sWarningNotification="ChatFilter: Please clean up your act"
 	sWarningBroadcast="%s is chatting abusive, type 'mutate cf judge %i` to judge the player"
 	WarningAction=CFA_Kick
+	bWarnVoting=false
 	iMaxWarnings=2
 	fMinVote=0.5000
 	sMuteMessage="ChatFilter: You are muted the rest of the game"
@@ -743,7 +731,7 @@ defaultproperties
 	bLogChat=false
 	sFileFormat="ChatFilter_%P_%Y_%M_%D_%H_%I_%S"
 
-	WarningMutClass="ServerExt.CFWarningMut"
+	WarningMutClass="%clientpackage%.CFWarningMut"
 
 	PICat="Chat Filter"
 	PIlabel[0]=""
@@ -790,4 +778,6 @@ defaultproperties
 	PIdesc[20]="Log the chats to the log file"
 	PIlabel[21]="Filename format"
 	PIdesc[21]="Filename to use for chat logging"
+	PIlabel[22]="Warning voting"
+	PIdesc[22]="Allow other players to vote on a judgement after a warning"
 }
