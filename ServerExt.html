@@ -4,9 +4,10 @@ ServerExt is a package containing extentions for UT2004 servers. It consist out 
 	<li><a href="#chatfilter">Chat Filter</a></li>
 	<li><a href="#playerjoinlog">Player join log</a></li>
 	<li><a href="#reservedslots">Reserved slots</a></li>
-	<li><a href="#servquery">ServQuery</a></li>
-	<li><a href="#statschatlog">Stats chat log</a></li>	
 	<li><a href="#mutrss">RSS Feed Mutator</a></li>
+	<li><a href="#servquery">ServQuery</a></li>
+	<li><a href="#statschatlog">Stats chat log</a></li>		
+	<li><a href="#teambalance">Team Balance mutator</a></li>
 </ul>
 More components will be added in the future. <br />
 The ServerExt package is being developed by <a href="http://wiki.beyondunreal.com/wiki/ElMuerte">Michiel "El Muerte" Hendriks</a>. This is an unofficial add-on and not supported by Atari support. 
@@ -789,6 +790,77 @@ All commands start with <code>mutate rss</code>, after which the following comma
 	<td>add a new RSS feed with name and download location</td>
 </tr>
 </table>
+
+<hr />
+<a name="teambalance"></a><h1>Team Balance mutator</h1>
+The Team Balance mutator will correct the team sizes when needed. Key players/bots (flag carriers) will never be balanced.
+
+<h2>Installation</h2>
+Since this is simply a mutator it works like any other mutator. The class name of this mutator is <code>ServerExt.mutTeamBalance</code>.
+
+<h2>Configuration</h2>
+<pre>
+[ServerExt.mutTeamBalance]
+bAnnounce=true
+iSizeThreshold=2
+bIgnoreWinning=false
+fTeamScoreThreshold=-1
+bOnlyBalanceOnRequest=false
+fTeamBalanceDelay=5
+bIgnoreReservedSlots=false
+bBotsBalance=true
+bAddBots=true
+iMaxBots=-1
+bSwitchPlayersBack=true
+bBalanceNewest=true
+</pre>
+<dl>
+	<dt>bAnnounce</dt>
+	<dd>If true announce this mutator in the server details</dd>
+
+	<dt>iSizeThreshold</dt>
+	<dd>The size difference between teams before it's considered uneven, 2 is really the minimum</dd>
+
+	<dt>bIgnoreWinning</dt>
+	<dd>If set to true, don't take into account if the smaller team is winning</dd>
+
+	<dt>fTeamScoreThreshold</dt>
+	<dd>Difference in teamscore before it's considered winning (used when checking
+	if the smallest team is winning), should be 0 or less because with -1 the
+	score difference has to be at least 2</dd>
+
+	<dt>bOnlyBalanceOnRequest</dt>
+	<dd>Only balance the teams when it's requested via: mutate balance</dd>
+
+	<dt>fTeamBalanceDelay</dt>
+	<dd>Number of seconds to wait befor balancing the team automatically</dd>
+
+	<dt>bIgnoreReservedSlots</dt>
+	<dd>If set to true, that entered bassed on a reserved slot (requires the Reserved Slots addon) will not be balanced. Only the reserved slots
+	with IP, Hash or PlayerName can be checked. Reserved slots based on the password or any other part of the connect url can't be checked.</dd>
+
+	<dt>bBotsBalance</dt>
+	<dd>Balance bots first. This only works if there are bots on the server, or MinPlayers has been set.</dd>
+
+	<dt>bAddBots</dt>
+	<dd>Add bots to balance the teams first.</dd>
+
+	<dt>iMaxBots</dt>
+	<dd>The absolute maximum number of bots allowed. If set to -1 it will use the maximum recommended player count for the current map, if set to
+	-2 it will use the minimum recommended player count (both corrected with the current player count).</dd>
+
+	<dt>bSwitchPlayersBack</dt>
+	<dd>If a user switches team when the teams are unbalanced switch the user back to his old team (when he tried to join the bigger team). If set 
+	to false it will use the standard balancing method.</dd>
+
+	<dt>bBalanceNewest</dt>
+	<dd>Balance the players based on their join time</dd>
+
+	<dt>bBalanceWorst</dt>
+	<dd>Balance the players based on their score/death ration. The worst are balanced first. If neither bBalanceNewest or bBalanceWorst are set
+	players are randomly balanced.</dd>
+
+</dl>
 
 <hr />
 <h2>License for LibHTTP2</h2>

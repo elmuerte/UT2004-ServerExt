@@ -5,66 +5,8 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: mutTeamBalance.uc,v 1.2 2004/05/23 19:28:10 elmuerte Exp $ -->
+	<!-- $Id: mutTeamBalance.uc,v 1.3 2004/05/24 06:58:38 elmuerte Exp $ -->
 *******************************************************************************/
-/*
-
-The main problems with team balancing are:
-
-1) Players intentionally switching teams to unbalance them or because
-they want to be on the winning team.
-
-2) More players leaving mid game  from one team than the other resulting
-in unbalanced teams.
-
-3) Bots not split evenly between teams.
-
-Here are the switches that  my ideal team balancing system would have:
-
-TeamBalanceDelay=
-Number of seconds to wait before forcing balanced teams with the other
-options.
-
-bBotsVsPlayers=
-If set to true, the teams are arranged to keep as many bots on one team
-as possible.
-
-bSplitBotsBetweenTeams=
-if true, and there are bots in the game, spread them evenly between the
-teams. If true, this supersedes bBotsVsPlayers.
-
-bAddBotsToBalance=
-If true, and there are more players than the MinPlayers number, bots are
-added to even the teams.
-
-bPlayerBalanceOnLeave=
-If a player leaves and unbalances the teams by 2 or more, the last
-player to connect on the other team is switched. This would supersede
-bAddBotsToBalance  if it was also true.
-
-bSwitchPlayersBack=
-If a player changes teams and unbalances the teams by two or more they
-are automatically switched back to their original team and get a message
-informing them.
-
-bOnlyBalanceOnRequest=
-If true, only take team balancing actions if the word "teams" has
-appeared in chat.
-
-bReservedSlotsImmune=
-If set to true, those players with reserved slots would not be subject
-to forced switching.
-
-Other notes:
-
-All team balancing functions would become inactive as soon as the game ends
-It also might be useful to have an option to not balance if the team
-with the lower number of players is winning.
-
-Thanks,
-Lee
-
-*/
 class mutTeamBalance extends Mutator;
 
 /** to reduce typecasting */
