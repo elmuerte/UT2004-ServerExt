@@ -2,6 +2,7 @@ d:\dev\ut2004\ut2-code
 0.8
 [Group]
 name=ServerExt
+Help\ServerExt\RemoteLogDump.php
 System\ServerExtClientA.int
 System\ServerExtClientA.u
 System\ServerExtClientB.int
