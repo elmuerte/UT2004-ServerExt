@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.8 2004/03/20 21:36:00 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.9 2004/03/22 20:30:38 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -18,11 +18,11 @@ var protected string SPACE_REPLACE;
 // Configuration options
 /** master enable switch */
 var(Config) config bool bEnabled;
-/*
+/** comma seperated list with feeds to use, leave blank to use all feeds */
+var(Config) config string sExlusiveFeeds;
 /** the client side GUI browser portal to spawn on: "mutate rss browser", after
 	spawning the Create event is called */
 var(Config) config string BrowserPortal;
-*/
 
 /** should the RSS feed content be broadcasted */
 var(Broadcasting) config bool bBroadcastEnabled;
@@ -92,7 +92,7 @@ var localized string msgAdded, msgDupName, msgDupLoc, msgRemoved, msgDisabledFee
 	msgEnabledFeed, msgUpdateFeed, msgDisabledMut, msgEnabledMut, msgEmpty,
 	msgDisabled, msgList, msgMutDisabled, msgListEntry, msgShowEntry, msgShow;
 /** Play Info descriptions */
-var localized string piDesc[11];
+var localized string piDesc[12];
 var localized string piOpt[2];
 
 event PreBeginPlay()
@@ -137,17 +137,34 @@ function InitRSS()
 /** Load the RSS Feeds */
 function LoadRSSFeeds()
 {
-	local array<string> items;
-	local int i;
+	local array<string> items, exclFeeds;
+	local int i, j;
 	local RSSFeedRecord item;
 
 	log("Loading RSS feeds from RSS.ini", name);
 	items = GetPerObjectNames("RSS", "RSSFeedRecord");
+	if (sExlusiveFeeds != "") split(sExlusiveFeeds, ",", exclFeeds);
+	if (exclFeeds.length > 0)
+	{
+		for (i = items.length-1; i >= 0; i--)
+		{
+			for (j = 0; j < exclFeeds.Length; j++)
+			{
+				if (exclFeeds[j] ~= items[i])
+				{
+					log(exclFeeds[j]);
+					break;
+				}
+			}
+			if (j < exclFeeds.Length) continue; // in the list
+			items.remove(i, 1);
+		}
+	}
 	for (i = 0; i < items.Length; i++)
 	{
 		if (items[i] == "") continue;
 
-		item = new(None, Repl(items[i], " ", SPACE_REPLACE)) class'ServerExt.RSSFeedRecord';
+		item = new(None, Repl(items[i], " ", SPACE_REPLACE)) class'RSSFeedRecord';
 		if (item != none)
 		{
 			Log("Loaded RSS Feed"@item.rssHost@"-"@item.rssLocation , name);
@@ -295,19 +312,17 @@ function Mutate(string MutateString, PlayerController Sender)
 			}
 			if (Feeds[m].Entries.Length == 0) SendMessage(msgEmpty, Sender);
 		}
-		/*
 		else if (cmd[1] ~= "browser")
 		{
 			SummonPortal(Sender);
 		}
-		*/
 		// Admin commands
-		else if ((cmd[1] ~= "stop") && (Sender.PlayerReplicationInfo.bAdmin))
+		else if ((cmd[1] ~= "stop") && isAdmin(Sender))
 		{
 			bEnabled = false;
 			SendMessage(msgDisabledMut, Sender);
 		}
-		else if ((cmd[1] ~= "update") && (Sender.PlayerReplicationInfo.bAdmin))
+		else if ((cmd[1] ~= "update") && isAdmin(Sender))
 		{
 			if (cmd.Length > 2) m = int(cmd[2]); else return;
 			if ((m == 0) && (cmd[2] != "0")) return;
@@ -317,7 +332,7 @@ function Mutate(string MutateString, PlayerController Sender)
 	  		Feeds[m].Update(htsock);
 	  		SendMessage(repl(msgUpdateFeed, "%s", Feeds[m].rssHost), Sender);
 		}
-		else if ((cmd[1] ~= "enable") && (Sender.PlayerReplicationInfo.bAdmin))
+		else if ((cmd[1] ~= "enable") && isAdmin(Sender))
 		{
 			if (cmd.Length > 2) m = int(cmd[2]); else return;
 			if ((m == 0) && (cmd[2] != "0")) return;
@@ -325,7 +340,7 @@ function Mutate(string MutateString, PlayerController Sender)
 	  		Feeds[m].rssEnabled = true;
 	  		SendMessage(repl(msgEnabledFeed, "%s", Feeds[m].rssHost), Sender);
 		}
-		else if ((cmd[1] ~= "disable") && (Sender.PlayerReplicationInfo.bAdmin))
+		else if ((cmd[1] ~= "disable") && isAdmin(Sender))
 		{
 			if (cmd.Length > 2) m = int(cmd[2]); else return;
 			if ((m == 0) && (cmd[2] != "0")) return;
@@ -333,7 +348,7 @@ function Mutate(string MutateString, PlayerController Sender)
 	  		Feeds[m].rssEnabled = false;
 	  		SendMessage(repl(msgDisabledFeed, "%s", Feeds[m].rssHost), Sender);
 		}
-		else if ((cmd[1] ~= "remove") && (Sender.PlayerReplicationInfo.bAdmin))
+		else if ((cmd[1] ~= "remove") && isAdmin(Sender))
 		{
 			if (cmd.Length > 2) m = int(cmd[2]); else return;
 			if ((m == 0) && (cmd[2] != "0")) return;
@@ -343,7 +358,7 @@ function Mutate(string MutateString, PlayerController Sender)
 			Feeds.Remove(m, 1);
 	  		SendMessage(repl(msgRemoved, "%s", tmp), Sender);
 		}
-		else if ((cmd[1] ~= "add") && (Sender.PlayerReplicationInfo.bAdmin))
+		else if ((cmd[1] ~= "add") && isAdmin(Sender))
 		{
 			if (cmd.Length < 4) return; // TODO: warning
 			tmp = Repl(cmd[2], " ", SPACE_REPLACE);
@@ -360,7 +375,7 @@ function Mutate(string MutateString, PlayerController Sender)
 					return;
 				}
 			}
-			fr = new(None, tmp) class'ServerExt.RSSFeedRecord';
+			fr = new(None, tmp) class'RSSFeedRecord';
 			fr.rssHost = cmd[2];
 			fr.rssLocation = cmd[3];
 			fr.rssUpdateInterval = iDefUpdateInterval;
@@ -376,7 +391,13 @@ function Mutate(string MutateString, PlayerController Sender)
 	}
 }
 
-/*
+function bool isAdmin(PlayerController sender)
+{
+	Log(Level.NetMode@NM_Standalone);
+	if (Level.NetMode == NM_Standalone) return true;
+	return sender.PlayerReplicationInfo.bAdmin;
+}
+
 /** open de client side RSS browser */
 function SummonPortal(PlayerController sender)
 {
@@ -387,7 +408,6 @@ function SummonPortal(PlayerController sender)
 	portal = spawn(portalclass, Sender);
 	portal.Created();
 }
-*/
 
 function Timer()
 {
@@ -486,6 +506,7 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 {
 	Super.FillPlayInfo(PlayInfo);
 	PlayInfo.AddSetting(default.FriendlyName, "bEnabled", 			default.piDesc[0],	128, 1, "CHECK");
+	PlayInfo.AddSetting(default.FriendlyName, "sExlusiveFeeds",		default.piDesc[11],	128, 1, "TEXT");
 
 	PlayInfo.AddSetting(default.FriendlyName, "bBroadcastEnabled", 	default.piDesc[1],	107, 10, "CHECK");
 	PlayInfo.AddSetting(default.FriendlyName, "fBroadcastDelay", 	default.piDesc[2],	107, 11, "TEXT", "10;1:9999");
@@ -519,9 +540,7 @@ defaultproperties
 	bInteractive=true
 	bUpdateEnabled=true
 	iDefUpdateInterval=45
-	/*
 	BrowserPortal="ServerExtClient.RSSBrowserPortal"
-	*/
 
 	msgAdded="Added RSS Feed %s"
 	msgDupName="Already a RSS Feed present with that name: %s"
@@ -552,4 +571,5 @@ defaultproperties
 	piDesc[8]="Interactive"
 	piDesc[9]="Updating enabled"
 	piDesc[10]="Default update time"
+	piDesc[11]="Exlcusive feeds"
 }
