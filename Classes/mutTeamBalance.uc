@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: mutTeamBalance.uc,v 1.5 2004/05/27 07:19:55 elmuerte Exp $ -->
+	<!-- $Id: mutTeamBalance.uc,v 1.6 2004/05/29 11:40:34 elmuerte Exp $ -->
 *******************************************************************************/
 class mutTeamBalance extends Mutator;
 
@@ -65,17 +65,24 @@ var(BotBalance) config bool bBotsFill;
 /** if a player switches team and it unbalances the team switch the player back,
 	if this is not set the default balacing will be applied */
 var(PlayerBalance) config bool bSwitchPlayersBack;
+
 /**
-	Balance players based on their join time, the newest players are balanced
-	first.
-*/
-var(PlayerBalance) config bool bBalanceNewest;
-/**
+	Various balance methods:
+	Balance players based on their join time (BM_Oldest, BM_Newest).
 	Balance players based on their gaming performance, their performance is
-	defined by their score/death ration. if neither bBalanceWorst or bBalanceNewest
-	is set random players will be balanced
+	defined by their score/death ration (BM_Worst, BM_Best).
+	Or just randomly. Key players are never balanced.
 */
-var(PlayerBalance) config bool bBalanceWorst;
+enum EBalanceMethod
+{
+	BM_Worst,
+	BM_Best,
+	BM_Oldest,
+	BM_Newest,
+	BM_Random,
+};
+/** method to use when balancing players */
+var(PlayerBalance) config EBalanceMethod BalanceMethod;
 
 /** log debug messages */
 var(DebugConfig) config bool bDebug;
@@ -174,7 +181,8 @@ function NotifyLogout(Controller Exiting)
 	if (Level.Game.bGameEnded) return;
 	if (PlayerController(Exiting) == none) return;
 
-	if (Exiting.PlayerReplicationInfo.Team.TeamIndex == 0) i = -1;
+	if (Exiting.PlayerReplicationInfo.Team == none) i = 0;
+	else if (Exiting.PlayerReplicationInfo.Team.TeamIndex == 0) i = -1;
 	else i = 1;
 	if (OddTeams(i))
 	{
@@ -296,6 +304,7 @@ function Balance()
 			if (bDebug) log("STAGE 1a - diff = "$diff, name);
 			i = diff - TeamGame.NumBots;
 			j = iMaxBots;
+			if (bDebug) log("DEBUG: initial iMaxBots = "$j, name);
 			switch (j)
 			{
 				case -1:	j = Level.IdealPlayerCountMax-TeamGame.NumPlayers;
@@ -349,7 +358,7 @@ function Balance()
 	{
 		for (j = i+1; j < PCs.length; j++)
 		{
-			if (bBalanceNewest)
+			if (BalanceMethod == BM_Newest)
 			{
 				if (PCs[i].PlayerReplicationInfo.StartTime < PCs[j].PlayerReplicationInfo.StartTime)
 				{
@@ -358,9 +367,28 @@ function Balance()
 					PCs[j] = PC;
 				}
 			}
-			else if (bBalanceWorst)
+			else if (BalanceMethod == BM_Oldest)
+			{
+				if (PCs[i].PlayerReplicationInfo.StartTime > PCs[j].PlayerReplicationInfo.StartTime)
+				{
+					PC = PCs[i];
+					PCs[i] = PCs[j];
+					PCs[j] = PC;
+				}
+			}
+			else if (BalanceMethod == BM_Worst)
 			{
 				if (PCs[i].PlayerReplicationInfo.Score*1000/(PCs[i].PlayerReplicationInfo.Deaths+1) >
+					PCs[j].PlayerReplicationInfo.Score*1000/(PCs[j].PlayerReplicationInfo.Deaths+1))
+				{
+					PC = PCs[i];
+					PCs[i] = PCs[j];
+					PCs[j] = PC;
+				}
+			}
+			else if (BalanceMethod == BM_Best)
+			{
+				if (PCs[i].PlayerReplicationInfo.Score*1000/(PCs[i].PlayerReplicationInfo.Deaths+1) <
 					PCs[j].PlayerReplicationInfo.Score*1000/(PCs[j].PlayerReplicationInfo.Deaths+1))
 				{
 					PC = PCs[i];
@@ -391,11 +419,13 @@ function CorrectBots()
 	local Controller C;
 	local UnrealTeamInfo team;
 	local int diff;
+	local array<Controller> killlist;
 
 	if (TeamGame.Teams[0].Size == TeamGame.Teams[1].Size) return;
 	if (TeamGame.MinPlayers <= 0 && TeamGame.NumBots <= 0) return; // no bot game
 
 	diff = abs(TeamGame.Teams[0].Size - TeamGame.Teams[1].Size);
+	if (bDebug) log("DEBUG: num bots ="@TeamGame.NumBots@"num players ="@TeamGame.NumPlayers@" min players ="@TeamGame.MinPlayers, name);
 	if (TeamGame.NumBots+TeamGame.NumPlayers > TeamGame.MinPlayers)
 	{
 		if (bDebug) log("DEBUG: CorrectBots - removing bots:"@diff, name);
@@ -406,13 +436,18 @@ function CorrectBots()
 			if (C.PlayerReplicationInfo.Team == team)
 			{
 				if (IsKeyPlayer(C)) continue;
-				TeamGame.KillBot(C);
+				killlist[killlist.length] = C;
 				diff--;
 			}
+			if (diff <= 0) break;
 		}
-		if (diff <= 0) return;
+		if (bDebug) log("DEBUG: killing"@killlist.length@"bot controllers", name);
+		for (diff = 0; diff < killlist.length; diff++)
+		{
+			TeamGame.KillBot(killlist[diff]);
+		}
 	}
-	else {
+	else if (TeamGame.NumBots+TeamGame.NumPlayers < TeamGame.MinPlayers) {
 		if (bDebug) log("DEBUG: CorrectBots - adding bots:"@diff, name);
 		TeamGame.AddBots(diff);
 	}
@@ -482,8 +517,7 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 	PlayInfo.AddSetting(default.PIgroup, "bBotsFill",				default.PIdesc[14], 75, 0, "Check",,, True);
 
 	PlayInfo.AddSetting(default.PIgroup, "bSwitchPlayersBack",		default.PIdesc[11], 75, 0, "Check",,, True);
-	PlayInfo.AddSetting(default.PIgroup, "bBalanceNewest",			default.PIdesc[12], 75, 0, "Check",,, True);
-	PlayInfo.AddSetting(default.PIgroup, "bBalanceWorst",			default.PIdesc[13], 75, 0, "Check",,, True);
+	PlayInfo.AddSetting(default.PIgroup, "BalanceMethod",			default.PIdesc[12], 75, 0, "Select",default.PIdesc[13],, True);
 }
 
 static event string GetDescriptionText(string PropName)
@@ -506,8 +540,7 @@ static event string GetDescriptionText(string PropName)
 		case "bBotsFill":				return default.PIhelp[14];
 
 		case "bSwitchPlayersBack":		return default.PIhelp[11];
-		case "bBalanceNewest":			return default.PIhelp[12];
-		case "bBalanceWorst":			return default.PIhelp[13];
+		case "BalanceMethod":			return default.PIhelp[12];
 	}
 	return "";
 }
@@ -535,8 +568,7 @@ defaultProperties
 	bBotsFill=false
 
 	bSwitchPlayersBack=true
-	bBalanceNewest=true
-	bBalanceWorst=false
+	BalanceMethod=BM_Worst
 
 	bDebug=false
 
@@ -569,10 +601,11 @@ defaultProperties
 	PIhelp[10]="The absolute maximum number of bots allowed. If set to -1 it will use the maximum recommended player count for the current map, if set to -2 it will use the minimum recommended player count (both corrected with the current player count)."
 	PIdesc[11]="Switch players back"
 	PIhelp[11]="If a user switches team when the teams are unbalanced switch the user back to his old team (when he tried to join the bigger team). If set to false it will use the standard balancing method."
-	PIdesc[12]="Balance newest players"
-	PIhelp[12]="Balance the players based on their join time"
-	PIdesc[13]="Balance worst players"
-	PIhelp[13]="Balance the players based on their score/death ration. The worst are balanced first. if neither bBalanceNewest or bBalanceWorst are set players are randomly balanced."
+	PIdesc[12]="Balance method"
+	PIhelp[12]="Method to balance the players"
+	// 13 is used for #12 PI info
+	PIdesc[13]="BM_Newest;Newest players;BM_Oldest;Oldest players;BM_Worst;Worst score rating;BM_Best;Best score rating;BM_Random;Random"
+	PIhelp[13]="none"
 	PIdesc[14]="Bots file the gap"
 	PIhelp[14]="When the game isn't unbalanced, but the team sizes are not equal bots will correct the team size"
 }

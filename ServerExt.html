@@ -817,8 +817,7 @@ bAddBots=true
 iMaxBots=-1
 bBotsFill=false
 bSwitchPlayersBack=true
-bBalanceNewest=true
-bBalanceWorst=false
+BalanceMethod=BM_Newest
 </pre>
 <dl>
 	<dt>bAnnounce</dt>
@@ -865,12 +864,12 @@ bBalanceWorst=false
 	<dd>If a user switches team when the teams are unbalanced switch the user back to his old team (when he tried to join the bigger team). If set
 	to false it will use the standard balancing method.</dd>
 
-	<dt>bBalanceNewest</dt>
-	<dd>Balance the players based on their join time</dd>
-
-	<dt>bBalanceWorst</dt>
-	<dd>Balance the players based on their score/death ration. The worst are balanced first. If neither bBalanceNewest or bBalanceWorst are set
-	players are randomly balanced.</dd>
+	<dt>BalanceMethod</dt>
+	<dd>Various balance methods:<br />
+	Balance players based on their join time (BM_Oldest, BM_Newest).<br />
+	Balance players based on their gaming performance, their performance is
+	defined by their score/death ration (BM_Worst, BM_Best).<br />
+	Or just randomly (BM_Random). Key players are never balanced.</dd>
 
 </dl>
 
