@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ChatFilter.uc,v 1.7 2004/09/27 07:58:23 elmuerte Exp $ -->
+	<!-- $Id: ChatFilter.uc,v 1.8 2004/10/01 22:11:17 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -731,7 +731,7 @@ defaultproperties
 	bLogChat=false
 	sFileFormat="ChatFilter_%P_%Y_%M_%D_%H_%I_%S"
 
-	WarningMutClass="%clientpackage%.CFWarningMut"
+	WarningMutClass="ServerExt.CFWarningMut"
 
 	PICat="Chat Filter"
 	PIlabel[0]=""
