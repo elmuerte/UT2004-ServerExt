@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.6 2004/03/19 21:40:39 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.7 2004/03/20 08:35:25 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -18,7 +18,8 @@ var protected string SPACE_REPLACE;
 // Configuration options
 /** master enable switch */
 var(Config) config bool bEnabled;
-/** the client side GUI browser portal to spawn on: "mutate rss browser" */
+/** the client side GUI browser portal to spawn on: "mutate rss browser", after
+	spawning the Create event is called */
 var(Config) config string BrowserPortal;
 
 /** should the RSS feed content be broadcasted */
@@ -378,13 +379,12 @@ function Mutate(string MutateString, PlayerController Sender)
 /** open de client side RSS browser */
 function SummonPortal(PlayerController sender, string param1, string param2)
 {
-	local class<RSSBrowserPortalBase> portalclass;
-	local RSSBrowserPortalBase portal;
-	portalclass = class<RSSBrowserPortalBase>(DynamicLoadObject(BrowserPortal, class'Class', false));
+	local class<Info> portalclass;
+	local Info portal;
+	portalclass = class<Info>(DynamicLoadObject(BrowserPortal, class'Class', false));
 	if (portalclass == none) return;
 	portal = spawn(portalclass, Sender);
-	portal.RSSSource = self;
-	portal.OpenBrowser(param1, param2);
+	portal.Created();
 }
 
 function Timer()
