@@ -12,6 +12,7 @@ event PreBeginPlay()
 	local class<SlotManagerBase> SM;
 
 	super.PreBeginPlay();
+	Log("Loading ReserverSlots ...", name);
 	Level.Game.AddMutator("ServerExt.ResSltMut");
 	default.SMClasses.length = 0;
 	for (i = 0; i < SlotManagerClasses.length; i++)

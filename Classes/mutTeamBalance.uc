@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: mutTeamBalance.uc,v 1.3 2004/05/24 06:58:38 elmuerte Exp $ -->
+	<!-- $Id: mutTeamBalance.uc,v 1.4 2004/05/25 20:17:21 elmuerte Exp $ -->
 *******************************************************************************/
 class mutTeamBalance extends Mutator;
 
@@ -16,6 +16,14 @@ var protected SlotManager SlotManager;
 
 /** announce this mutator to the master server */
 var(Config) config bool bAnnounce;
+
+/**
+	number seconds since the beginning of the game that the team balancer will
+	remain inactive.
+*/
+var(Config) config float fLingerTime;
+/** if true the team balancer is active */
+var protected bool bActive;
 
 /** minimum difference between team sizes before actions are taken */
 var(Config) config int iSizeThreshold;
@@ -35,6 +43,8 @@ var(Config) config bool bOnlyBalanceOnRequest;
 /** don't balance players in reserved slots, this requires the ReservedSlots
 	addon of ServerExt */
 var(Config) config bool bIgnoreReservedSlots;
+/** if set only administrators can balance the teams via the mutate command */
+var(Config) config bool bOnlyAdminBalance;
 
 /** bots will balance the teams as much as possible */
 var(BotBalance) config bool bBotsBalance;
@@ -71,6 +81,10 @@ struct TeamRecordEntry
 /** list with playercontrollers and their "old" team id */
 var array<TeamRecordEntry> TeamRecords;
 
+//!Localization
+var localized string msgNotUnbalanced, msgAdminRequired, PIdesc[14], PIhelp[14],
+	PIgroup;
+
 function PreBeginPlay()
 {
 	local TeamBalanceRules TBR;
@@ -87,26 +101,39 @@ function PreBeginPlay()
 	TBR = Spawn(class'TeamBalanceRules');
 	TBR.mutTB = self;
 	Level.Game.AddGameModifier(TBR);
+	if (fLingerTime < 0.01) bActive = true;
+	else {
+		bActive = false;
+		SetTimer(fLingerTime, false);
+	}
 }
 
 function Mutate(string MutateString, PlayerController Sender)
 {
 	super.Mutate(MutateString, Sender);
+	if (!bActive) return;
 	if (Level.Game.bGameEnded) return;
 	if (MutateString ~= "balance")
 	{
+		if (bOnlyAdminBalance && !Level.Game.AccessControl.IsAdmin(Sender))
+		{
+			Sender.TeamMessage(none, msgAdminRequired, 'None');
+			return;
+		}
 		if (!OddTeams())
 		{
-			//TODO: send message
+			Sender.TeamMessage(none, msgNotUnbalanced, 'None');
 			return;
 		}
 		Balance();
 	}
 
+	/*
 	else if (Left(MutateString, 3) ~= "bot")
 	{
 		AddBotToTeam(TeamGame.Teams[int(Mid(MutateString, 3))]);
 	}
+	*/
 }
 
 /** check if a player requested a team in an unbalanced state */
@@ -114,6 +141,7 @@ function ModifyLogin(out string Portal, out string Options)
 {
 	local int rteam, i;
 	super.ModifyLogin(Portal, Options);
+	if (!bActive) return;
 	if (bOnlyBalanceOnRequest) return;
 	if (Level.Game.bGameEnded) return;
 
@@ -132,6 +160,7 @@ function NotifyLogout(Controller Exiting)
 {
 	local int i;
 	super.NotifyLogout(Exiting);
+	if (!bActive) return;
 	if (bOnlyBalanceOnRequest) return;
 	if (Level.Game.bGameEnded) return;
 	if (PlayerController(Exiting) == none) return;
@@ -148,6 +177,11 @@ function NotifyLogout(Controller Exiting)
 /** for the delayed balance call */
 event Timer()
 {
+	if (!bActive)
+	{
+		bActive = true;
+		return;
+	}
 	if (Level.Game.bGameEnded) return;
 	if (!OddTeams()) return; // check again
 	Balance();
@@ -157,6 +191,7 @@ event Timer()
 function PCTeamSwitch(PlayerController PC)
 {
 	local int i;
+	if (!bActive) return;
 	for (i = 0; i < TeamRecords.length; i++)
 	{
 		if (TeamRecords[i].PC == PC) break;
@@ -279,7 +314,7 @@ function Balance()
 			if (diff <= 0) return;
 		}
 	}
-	// rearage humans
+	// rearange humans
 	log("STAGE 2a - diff = "$diff, name);
 	for (C = Level.ControllerList; C != none; C = C.nextController)
 	{
@@ -348,6 +383,7 @@ function bool IsKeyPlayer(Controller C)
 	return C.PlayerReplicationInfo.HasFlag != none;
 }
 
+/*
 /** debug function */
 function AddBotToTeam(UnrealTeamInfo Team, optional string botname)
 {
@@ -371,11 +407,59 @@ function AddBotToTeam(UnrealTeamInfo Team, optional string botname)
 	else
 		NewBot.GotoState('Dead','MPStart');
 }
+*/
 
 /** add information to the server details listing */
 function GetServerDetails( out GameInfo.ServerResponseLine ServerState )
 {
 	if (bAnnounce) super.GetServerDetails(ServerState);
+}
+
+static function FillPlayInfo(PlayInfo PlayInfo)
+{
+	super.FillPlayInfo(PlayInfo);
+	PlayInfo.AddSetting(default.PIgroup, "bAnnounce",				default.PIdesc[0], 175, 0, "Check",,, True);
+
+	PlayInfo.AddSetting(default.PIgroup, "fLingerTime",				default.PIdesc[1], 100, 0, "Text", "5;0:999",, True);
+	PlayInfo.AddSetting(default.PIgroup, "iSizeThreshold",			default.PIdesc[2],  75, 0, "Text", "3;0:999",, True);
+	PlayInfo.AddSetting(default.PIgroup, "bIgnoreWinning",			default.PIdesc[3],  75, 0, "Check",,, True);
+	PlayInfo.AddSetting(default.PIgroup, "fTeamScoreThreshold",		default.PIdesc[4],  75, 0, "Text", "5;-999:999",, True);
+	PlayInfo.AddSetting(default.PIgroup, "bOnlyBalanceOnRequest",	default.PIdesc[5], 150, 0, "Check",,, True);
+	PlayInfo.AddSetting(default.PIgroup, "fTeamBalanceDelay",		default.PIdesc[6],  75, 0, "Text", "5;0:999",, True);
+	PlayInfo.AddSetting(default.PIgroup, "bOnlyAdminBalance",		default.PIdesc[7], 150, 0, "Check",,, True);
+
+	PlayInfo.AddSetting(default.PIgroup, "bBotsBalance",			default.PIdesc[8],  75, 0, "Check",,, True);
+	PlayInfo.AddSetting(default.PIgroup, "bAddBots",				default.PIdesc[9],  75, 0, "Check",,, True);
+	PlayInfo.AddSetting(default.PIgroup, "iMaxBots",				default.PIdesc[10], 75, 0, "Text", "3;-2:999",, True);
+
+	PlayInfo.AddSetting(default.PIgroup, "bSwitchPlayersBack",		default.PIdesc[11], 75, 0, "Check",,, True);
+	PlayInfo.AddSetting(default.PIgroup, "bBalanceNewest",			default.PIdesc[12], 75, 0, "Check",,, True);
+	PlayInfo.AddSetting(default.PIgroup, "bBalanceWorst",			default.PIdesc[13], 75, 0, "Check",,, True);
+}
+
+static event string GetDescriptionText(string PropName)
+{
+	switch (PropName)
+	{
+		case "bAnnounce":				return default.PIhelp[0];
+
+		case "fLingerTime":				return default.PIhelp[1];
+		case "iSizeThreshold":			return default.PIhelp[2];
+		case "bIgnoreWinning":			return default.PIhelp[3];
+		case "fTeamScoreThreshold":		return default.PIhelp[4];
+		case "bOnlyBalanceOnRequest":	return default.PIhelp[5];
+		case "fTeamBalanceDelay":		return default.PIhelp[6];
+		case "bOnlyAdminBalance":		return default.PIhelp[7];
+
+		case "bBotsBalance":			return default.PIhelp[8];
+		case "bAddBots":				return default.PIhelp[9];
+		case "iMaxBots":				return default.PIhelp[10];
+
+		case "bSwitchPlayersBack":		return default.PIhelp[11];
+		case "bBalanceNewest":			return default.PIhelp[12];
+		case "bBalanceWorst":			return default.PIhelp[13];
+	}
+	return "";
 }
 
 defaultProperties
@@ -386,12 +470,14 @@ defaultProperties
 
 	bAnnounce=true
 
+	fLingerTime=0
 	iSizeThreshold=2
 	bIgnoreWinning=false
 	fTeamScoreThreshold=-1
 	bOnlyBalanceOnRequest=false
 	fTeamBalanceDelay=5
 	bIgnoreReservedSlots=false
+	bOnlyAdminBalance=false
 
 	bBotsBalance=true
 	bAddBots=true
@@ -399,4 +485,39 @@ defaultProperties
 
 	bSwitchPlayersBack=true
 	bBalanceNewest=true
+	bBalanceWorst=false
+
+	msgNotUnbalanced="The teams are NOT unbalanced"
+	msgAdminRequired="Only administrators can request to balance the teams."
+
+	PIgroup="Team Balancer"
+
+	PIdesc[0]="Announce to MS"
+	PIhelp[0]="Announce this mutator to the master server and server details"
+	PIdesc[1]="Initial in active time"
+	PIhelp[1]="Number seconds since the beginning of the game that the team balancer will remain inactive."
+	PIdesc[2]="Size threshold"
+	PIhelp[2]="The size difference between teams before it's considered uneven, 2 is really the minimum."
+	PIdesc[3]="Ignore winning team"
+	PIhelp[3]="If set to true, don't take into account if the smaller team is winning"
+	PIdesc[4]="Score threshold"
+	PIhelp[4]="Difference in teamscore before it's considered winning (used when checking if the smallest team is winning), should be 0 or less because with -1 the score difference has to be at least 2"
+	PIdesc[5]="Only balance on request"
+	PIhelp[5]="Only balance the teams when it's requested via: mutate balance"
+	PIdesc[6]="Team balance delay"
+	PIhelp[6]="Number of seconds to wait befor balancing the team automatically"
+	PIdesc[7]="Ignore reserved slots"
+	PIhelp[7]="If set to true, that entered bassed on a reserved slot (requires the Reserved Slots addon) will not be balanced. Only the reserved slots	with IP, Hash or PlayerName can be checked. Reserved slots based on the password or any other part of the connect url can't be checked."
+	PIdesc[8]="Bots balance"
+	PIhelp[8]="Balance bots first. This only works if there are bots on the server, or MinPlayers has been set."
+	PIdesc[9]="Add bots"
+	PIhelp[9]="Add bots to balance the teams first."
+	PIdesc[10]="Maximum bots"
+	PIhelp[10]="The absolute maximum number of bots allowed. If set to -1 it will use the maximum recommended player count for the current map, if set to -2 it will use the minimum recommended player count (both corrected with the current player count)."
+	PIdesc[11]="Switch players back"
+	PIhelp[11]="If a user switches team when the teams are unbalanced switch the user back to his old team (when he tried to join the bigger team). If set to false it will use the standard balancing method."
+	PIdesc[12]="Balance newest players"
+	PIhelp[12]="Balance the players based on their join time"
+	PIdesc[13]="Balance worst players"
+	PIhelp[13]="Balance the players based on their score/death ration. The worst are balanced first. if neither bBalanceNewest or bBalanceWorst are set players are randomly balanced."
 }

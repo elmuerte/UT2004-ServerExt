@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: SlotManager.uc,v 1.4 2004/05/23 15:36:00 elmuerte Exp $ -->
+	<!-- $Id: SlotManager.uc,v 1.5 2004/05/25 20:17:21 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManager extends SlotManagerBase config;
 
@@ -61,6 +61,12 @@ var globalconfig int AbsoluteMaxSpectators;
 //!Localization
 var localized string PIgroup, PIdesc[3], PIhelp[3], KickMsg;
 
+function PreBeginPlay()
+{
+	super.PreBeginPlay();
+	log("Loaded slot manager:"@slots.length@"slots configured", name);
+}
+
 /** check free slots */
 function bool PreLogin(	string Options, string Address, string PlayerID,
 						out string Error, out string FailCode, bool bSpectator)
@@ -77,13 +83,19 @@ function bool PreLogin(	string Options, string Address, string PlayerID,
 			{
 				if (!AtMaxCapacity(bSpectator)) IncreaseCapicity(bSpectator);
 				else {
-					log("Maximum capicity reached", name);
+					log("Absolute maximum capicity reached", name);
 					return false;
 				}
 			}
 			else return KickFreeRoom(Slots[idx].method, bSpectator, Level.Game.ParseOption(Options, "name"));
 		}
 		return true;
+	}
+	else {
+		if (Level.Game.AtCapacity(bSpectator))
+		{
+			log("No reserved slot found, rejecting new player", name);
+		}
 	}
 }
 
@@ -119,11 +131,11 @@ function bool AtMaxCapacity(optional bool bSpectator)
 	if (bSpectator)
 	{
 		if (AbsoluteMaxSpectators <= 0) return false;
-		return Level.Game.MaxSpectators < AbsoluteMaxSpectators;
+		return Level.Game.MaxSpectators >= AbsoluteMaxSpectators;
 	}
 	else {
 		if (AbsoluteMaxPlayers <= 0) return false;
-		return Level.Game.MaxPlayers < AbsoluteMaxPlayers;
+		return Level.Game.MaxPlayers >= AbsoluteMaxPlayers;
 	}
 }
 
@@ -192,6 +204,7 @@ function bool KickFreeRoom(ESlotOpenMethod method, optional bool bSpectator, opt
 
 	if (best != none)
 	{
+		log("Kicking player"@best.PlayerReplicationInfo@"to make room for"@newname, name);
 		Level.Game.AccessControl.DefaultKickReason = GetKickReason(newname);
 		Level.Game.AccessControl.KickPlayer(PlayerController(best));
 		Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;

@@ -7,12 +7,13 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: StatsChatLog.uc,v 1.3 2004/04/19 06:27:55 elmuerte Exp $ -->
+	<!-- $Id: StatsChatLog.uc,v 1.4 2004/05/25 20:17:21 elmuerte Exp $ -->
 *******************************************************************************/
-
 class StatsChatLog extends BroadcastHandler;
 
 var protected GameStats statslog;
+
+const SPECPRE = "spec_";
 
 function PreBeginPlay()
 {
@@ -41,7 +42,11 @@ function BroadcastText( PlayerReplicationInfo SenderPRI, PlayerController Receiv
 	{
 		if (Type == 'say') ctype = "V";
 		else if (Type == 'teamsay') ctype = "TV";
-		if (ctype != "") statslog.TempLog.Logf(statslog.Header()$ctype$Chr(9)$SenderPRI.PlayerID$Chr(9)$Msg);
+		if (ctype != "")
+		{
+			if (SenderPRI.bIsSpectator) statslog.TempLog.Logf(statslog.Header()$ctype$Chr(9)$SPECPRE$SenderPRI.PlayerName$Chr(9)$Msg);
+			else statslog.TempLog.Logf(statslog.Header()$ctype$Chr(9)$SenderPRI.PlayerID$Chr(9)$Msg);
+		}
 	}
 	super.BroadcastText(SenderPRI, Receiver, Msg, Type);
 }
