@@ -5,8 +5,8 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ReservedSlotsIni.uc,v 1.1 2004/05/17 09:37:20 elmuerte Exp $ -->
+	<!-- $Id: ReservedSlotsIni.uc,v 1.2 2004/05/17 21:19:04 elmuerte Exp $ -->
 *******************************************************************************/
-class ReservedSlotsIni extends AccessControlIni;
+class ReservedSlotsIni extends AccessControlIni config;
 
-//#include Classes/ReservedSlots.inc
+#include Classes/ReservedSlots.inc

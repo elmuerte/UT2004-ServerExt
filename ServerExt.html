@@ -3,6 +3,7 @@ ServerExt is a package containing extentions for UT2004 servers. It consist out 
 <ul>
 	<li><a href="#chatfilter">Chat Filter</a></li>
 	<li><a href="#playerjoinlog">Player join log</a></li>
+	<li><a href="#reservedslots">Reserved slots</a></li>
 	<li><a href="#servquery">ServQuery</a></li>
 	<li><a href="#statschatlog">Stats chat log</a></li>	
 	<li><a href="#mutrss">RSS Feed Mutator</a></li>
@@ -13,6 +14,7 @@ The ServerExt package is being developed by <a href="http://wiki.beyondunreal.co
 <h2>Downloads</h2>
 New versions of this package can be downloaded from <a href="http://ut2004.elmuerte.com/ServerExt">the ServerExt website</a>.<br />
 <ul>
+	<li>Version 105 <a href="http://ut2004.elmuerte.com/files/ServerExt-v105.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v105-ut2mod.zip">[ut2mod]</a></li>
 	<li>Version 104 <a href="http://ut2004.elmuerte.com/files/ServerExt-v104.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v104-ut2mod.zip">[ut2mod]</a></li>
 	<li>Version 103 <a href="http://ut2004.elmuerte.com/files/ServerExt-v103.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v103-ut2mod.zip">[ut2mod]</a></li>
 	<li>Version 102 <a href="http://ut2004.elmuerte.com/files/ServerExt-v102.zip">[zip]</a> <a href="http://ut2004.elmuerte.com/files/ServerExt-v102-ut2mod.zip">[ut2mod]</a></li>
@@ -105,6 +107,12 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 
 <h2>Revision history</h2>
 
+<h3>Changes since v104</h3>
+<ul>
+	<li>Removed bFriendlymessage from ChatFilter, friendly messages are now always used and doesn't require the client side package</li>
+	<li>Added reserved slot feature</li>
+</ul>
+
 <h3>Changes since v103</h3>
 <ul>
 	<li>Removed debug log spam</li>
@@ -143,7 +151,14 @@ Copy the following files to the System directory of your UT2004 servers:
 	<li>ServerExtClient103.u</li>
 	<li>ServerExtClient103.int</li>
 </ul>
-Remove the old ServerExtClient.u, ServerExtClient101.u file from you system and configuration.
+Remove the old ServerExtClient.u, ServerExtClient101.u file from you system and configuration.<br />
+<br />
+Copy the following files to the Web\ServerAdmin directory of your UT2004 servers:
+<ul>
+	<li>rssfeeds.htm</li>
+	<li>slotmanager.htm</li>
+	<li>slotmanager-entry.inc</li>
+</ul>
 
 <hr />
 <a name="chatfilter"></a><h1>Chat Filter</h1>
@@ -162,7 +177,6 @@ ServerActors=ServerExt.ChatFilter
 The configuration of the behavior of ChatFilter resides in the server configuration file (UT2003.ini). Add the following lines to the file:
 <pre>
 [ServerExt.ChatFilter]
-bFriendlyMessage=false
 fTimeFrame=1.0000
 iMaxPerTimeFrame=2
 iMaxRepeat=1
@@ -192,8 +206,6 @@ bLogChat=false
 sFileFormat="ChatFilter_%P_%Y_%M_%D_%H_%I_%S"
 </pre>
 <dl>
-	<dt>bFriendlyMessage</td>
-	<dd>Display a friendly message window when a player gets removed from the server.</dd>
 	<dt>fTimeFrame</td>
 	<dd>Set the number of seconds of a single time frame</dd>
 	<dt>iMaxPerTimeFrame</td>
@@ -331,6 +343,78 @@ sFileFormat="PlayerJoin_%P_%Y_%M_%D_%H_%I_%S"
 	</dd>
 </dl>
 
+<hr />
+<a name="reservedslots"></a><h1>Reserved slots</h1>
+This add-on allows you to add reserved slots. Players with the correct login details can still enter a server that is at capicity. <br />
+This add-on replaces the AccessControl (both the single admin and multiple admin system are supported), so this mod doesn't work with other mods that replace the AccessControl.<br />
+
+<h2>Installation</h2>
+If you are using the single admin system you will have to change the following setting:
+<pre>
+[Engine.GameInfo]
+AccessControlClass=ServerExt.ReservedSlots
+</pre>
+If you are using the multiple admin system (xAdmin) you will have to change it to:
+<pre>
+[Engine.GameInfo]
+AccessControlClass=ServerExt.ReservedSlotsIni
+</pre>
+
+<h2>Configuration</h2>
+The reserved slots can be configured via the WebAdmin. A new page is added to the main list, this page allows you to edit the reserved slots. The other settings might be available via the "defaults" page.<br />
+But you can also change the settings directly in the UT2004.ini file:
+<pre>
+[ServerExt.SlotManager]
+AbsoluteMaxPlayers=0
+AbsoluteMaxSpectators=0
+Slots=(Data="12345678901234567890123456789012",Type=ST_Hash,specOnly=False,Method=SOM_Expand)
+Slots=(Data="192.168.*",Type=ST_IP,specOnly=False,Method=SOM_KickRandom)
+...
+</pre>
+<dl>
+	<dt>AbsoluteMaxPlayers</dt>
+	<dd>This is the absolute maximum limit for players, the player count will never increase more than this value. If this value is zero or less there won't be a limit</dd>
+	<dt>AbsoluteMaxSpectators</dt>
+	<dd>Same as AbsoluteMaxPlayers but for spectators</dd>
+	<dt>Slots</dt>
+	<dd>This is a list of reserved slots. You can have an unlimited number of slot configuration. Each entry has the following fields:
+		<dl>
+			<dt>data</dt>
+			<dd>This contains the information to check, the format depends on the type. You can use the following wildcards: * = zero or many characters, ? = one character</dd>
+			<dt>type</dt>
+			<dd>This is the type of the slot, it set what information to check.
+			<ul>
+				<li>ST_IP - IP address</li>
+				<li>ST_Hash - CDKey hash</li>
+				<li>ST_Nick - Requested nick name</li>
+				<li>ST_Password - The password entered on the connect url (?password=[somepassword])</li>
+				<li>ST_Options - Match with the connect url. This can be usefull to keep the check comepletely secret. For example a the data contains "*MySecret=URLOption*", if the player joins the server with: ip.to.server?name=MyNick?MySecret=URLOption (or similar) it will match.</li>
+			</dd>
+			<dt>specOnly</dt>
+			<dd>if set to True this slot is for spectators only</dd>
+			<dt>method</dt>
+			<dd>The method to use to make room for this player.
+			<ul>
+				<li>SOM_Expand - increase the max limit (adviced method)</li>
+				<li>SOM_KickRandom - use a random kick method</li>
+				<li>SOM_KickWorst - kick the player with the lowest score/death ration</li>
+				<li>SOM_KickBest - kick the player with the highest score/death ration</li>
+				<li>SOM_KickOldest - kick the player that been the longest on the server</li>
+				<li>SOM_KickNewest - kick the player that joined last</li>
+			</ul>
+			</dd>
+		</dl>
+	</dd>
+</dl>
+By default the system has only one SlotManager installed (ServerExt.SlotManager). It's possible to program additional SlotManagers. To add new slot managers you have to change the following:
+<pre>
+[ServerExt.ReservedSlots]
+SlotManagerClasses=ServerExt.SlotManager
+SlotManagerClasses=MyExtentions.MySlotManager
+...
+</pre>
+Note: if you installed the ReservedSlotsIni as AccessControl it should be the section "[ServerExt.ReservedSlotsIni]"<br />
+Information on writing a SlotManager can be found in the source code of ServerExt.
 
 <hr />
 <a name="servquery"></a><h1>ServQuery</h1>

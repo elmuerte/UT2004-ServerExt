@@ -11,7 +11,8 @@ System\ServerExt.ucl
 System\wUtils105.u
 System\RSS.ini.example
 Web\ServerAdmin\rssfeeds.htm
-Web\ServerAdmin\rssfeed_edit.inc
+Web\ServerAdmin\slotmanager.htm
+Web\ServerAdmin\slotmanager-entry.inc
 [Requirement]
 product=UT2004
 version=3100
@@ -21,10 +22,10 @@ versionURL=http://unreal.epicgames.com/
 developerURL=http://www.epicgames.com/
 [Product]
 product=ServerExt
-version=104
+version=105
 developer=Michiel "El Muerte" Hendriks
 productURL=http://ut2004.elmuerte.com/ServerExt
-versionURL=http://ut2004.elmuerte.com/files/ServerExt-v103.zip
+versionURL=http://ut2004.elmuerte.com/files/ServerExt-v105.zip
 developerURL=http://ut2004.elmuerte.com/
 readme=Help\ServerExt.html
 title=ServerExt Setup

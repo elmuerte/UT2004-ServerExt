@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ChatFilter.uc,v 1.4 2004/05/14 10:47:56 elmuerte Exp $ -->
+	<!-- $Id: ChatFilter.uc,v 1.5 2004/05/17 21:19:03 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -37,7 +37,7 @@ enum BNA
 
 // Misc
 /** use a friendly message when removing the player */
-var(Config) config bool bFriendlyMessage;
+//var(Config) config bool bFriendlyMessage;
 
 // SPAM check
 /** timeframe length, in seconds, after each timeframe the score is reset */
@@ -167,7 +167,7 @@ function int findChatRecord(Actor Sender, optional bool bCreate)
 	{
 		ChatRecords.Length = ChatRecords.Length+1;
 		ChatRecords[ChatRecords.Length-1].Sender = PlayerController(Sender);
-		if (bFriendlyMessage || bCheckNicknames)
+		if ((bCheckNicknames && (BadnickAction == BNA_Request)) || bShowMuted)
 		{
 			if (ChatRecords[ChatRecords.Length-1].Dispatcher == none)
 				ChatRecords[ChatRecords.Length-1].Dispatcher = spawn(MessageDispatcherClass, Sender);
@@ -255,16 +255,19 @@ function judge(PlayerController Sender, int cr)
 			{
 				case CFA_Nothing: 		return;
 				case CFA_Kick:  		judgeLog("Kicking player"@Sender.PlayerReplicationInfo.PlayerName);
-										if (bFriendlyMessage) ChatRecords[cr].Dispatcher.Dispatch(Sender, 1);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[1];
 										Level.Game.AccessControl.KickPlayer(Sender);
+										Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 										return;
 				case CFA_Ban: 			judgeLog("Banning player"@Sender.PlayerReplicationInfo.PlayerName);
-										if (bFriendlyMessage) ChatRecords[cr].Dispatcher.Dispatch(Sender, 2);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[2];
 										Level.Game.AccessControl.BanPlayer(Sender, false);
+										Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 										return;
 				case CFA_SessionBan:	judgeLog("Session banning player"@Sender.PlayerReplicationInfo.PlayerName);
-										if (bFriendlyMessage) ChatRecords[cr].Dispatcher.Dispatch(Sender, 3);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[3];
 										Level.Game.AccessControl.BanPlayer(Sender, true);
+										Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 										return;
 				case CFA_Defrag:		judgeLog("Defragging player"@Sender.PlayerReplicationInfo.PlayerName);
 										Sender.PlayerReplicationInfo.Score -= 1;
@@ -297,28 +300,28 @@ function judgeWarning(PlayerController Sender, int cr)
 			{
 				case CFA_Nothing: 		break;
 				case CFA_Kick:  		judgeLog("Kicking player"@Sender.PlayerReplicationInfo.PlayerName@"iMaxWarning exceeded:"@(ChatRecords[cr].warnings > iMaxWarnings)@"Requested:"@ChatRecords[cr].bUserRequest);
-										if (bFriendlyMessage)
-										{
-											if (ChatRecords[cr].bUserRequest) ChatRecords[cr].Dispatcher.Dispatch(Sender, 4);
-											else ChatRecords[cr].Dispatcher.Dispatch(Sender, 1);
-										}
+										if (ChatRecords[cr].bUserRequest) //ChatRecords[cr].Dispatcher.Dispatch(Sender, 4);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[4];
+										else //ChatRecords[cr].Dispatcher.Dispatch(Sender, 1);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[1];
 										Level.Game.AccessControl.KickPlayer(Sender);
+										Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 										break;
 				case CFA_Ban: 			judgeLog("Banning player"@Sender.PlayerReplicationInfo.PlayerName@"iMaxWarning exceeded:"@(ChatRecords[cr].warnings > iMaxWarnings)@"Requested:"@ChatRecords[cr].bUserRequest);
-										if (bFriendlyMessage)
-										{
-											if (ChatRecords[cr].bUserRequest) ChatRecords[cr].Dispatcher.Dispatch(Sender, 5);
-											else ChatRecords[cr].Dispatcher.Dispatch(Sender, 2);
-										}
+										if (ChatRecords[cr].bUserRequest) //ChatRecords[cr].Dispatcher.Dispatch(Sender, 5);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[5];
+										else //ChatRecords[cr].Dispatcher.Dispatch(Sender, 2);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[2];
 										Level.Game.AccessControl.BanPlayer(Sender, false);
+										Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 										break;
 				case CFA_SessionBan:	judgeLog("Session banning player"@Sender.PlayerReplicationInfo.PlayerName@"iMaxWarning exceeded:"@(ChatRecords[cr].warnings > iMaxWarnings)@"Requested:"@ChatRecords[cr].bUserRequest);
-										if (bFriendlyMessage)
-										{
-											if (ChatRecords[cr].bUserRequest) ChatRecords[cr].Dispatcher.Dispatch(Sender, 6);
-											else ChatRecords[cr].Dispatcher.Dispatch(Sender, 3);
-										}
+										if (ChatRecords[cr].bUserRequest) //ChatRecords[cr].Dispatcher.Dispatch(Sender, 6);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[6];
+										else //ChatRecords[cr].Dispatcher.Dispatch(Sender, 3);
+										Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[3];
 										Level.Game.AccessControl.BanPlayer(Sender, true);
+										Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 										break;
 				case CFA_Defrag:		judgeLog("Defragging player"@Sender.PlayerReplicationInfo.PlayerName@"iMaxWarning exceeded:"@(ChatRecords[cr].warnings > iMaxWarnings)@"Requested:"@ChatRecords[cr].bUserRequest);
 										Sender.PlayerReplicationInfo.Score -= 1;
@@ -424,9 +427,12 @@ function CheckNickname(PlayerController PC)
 			judgeLog("Bad nickname"@PC.PlayerReplicationInfo.PlayerName);
 			if (BadnickAction == BNA_Kick)
 			{
-				if (foulName) ChatRecords[i].Dispatcher.Dispatch(PC, 0);
-				else if (badName) ChatRecords[i].Dispatcher.Dispatch(PC, 7);
+				if (foulName) //ChatRecords[i].Dispatcher.Dispatch(PC, 0);
+				Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[0];
+				else if (badName) //ChatRecords[i].Dispatcher.Dispatch(PC, 7);
+				Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[7];
 				Level.Game.AccessControl.KickPlayer(PC);
+				Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 			}
 			else if (BadnickAction == BNA_Request)
 			{
@@ -435,9 +441,12 @@ function CheckNickname(PlayerController PC)
 			}
 			else if ((BadnickAction == BNA_Ban) || (BadnickAction == BNA_SessionBan))
 			{
+				if (foulName) //ChatRecords[i].Dispatcher.ChangeNamerequest(PC, 0);
+				Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[0];
+				else if (badName) //ChatRecords[i].Dispatcher.ChangeNamerequest(PC, 7);
+				Level.Game.AccessControl.DefaultKickReason = class'ChatFilterMsg'.default.messages[7];
 				Level.Game.AccessControl.BanPlayer(PC, (BadnickAction == BNA_SessionBan));
-				if (foulName) ChatRecords[i].Dispatcher.ChangeNamerequest(PC, 0);
-				else if (badName) ChatRecords[i].Dispatcher.ChangeNamerequest(PC, 7);
+				Level.Game.AccessControl.DefaultKickReason = Level.Game.AccessControl.default.DefaultKickReason;
 			}
 		}
 	}
@@ -513,7 +522,7 @@ event PreBeginPlay()
 			log("[~]"@ReplacementTable[i].from@"=>"@ReplacementTable[i].to);
 		}
 	}
-	if (bFriendlyMessage || bCheckNicknames)
+	if ((bCheckNicknames && (BadnickAction == BNA_Request)) || bShowMuted)
 	{
 		if (int(Level.EngineVersion) > 3195) AddToPackageMap(ClientSidePackage);
 		MessageDispatcherClass = class<CFMsgDispatcher>(DynamicLoadObject(ClientSidePackage$".CFMsgDispatcher", class'Class'));
@@ -620,7 +629,6 @@ function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationI
 static function FillPlayInfo(PlayInfo PI)
 {
 	Super.FillPlayInfo(PI);
-	PI.AddSetting(default.PICat, "bFriendlyMessage", default.PIlabel[0], 10, 0, "check");
 
 	PI.AddSetting(default.PICat, "fTimeFrame", default.PIlabel[1], 10, 1, "Text", "5");
 	PI.AddSetting(default.PICat, "iMaxPerTimeFrame", default.PIlabel[2], 10, 2, "Text", "5");
@@ -657,7 +665,6 @@ static event string GetDescriptionText(string PropName)
 {
 	switch (PropName)
 	{
-		case "bFriendlyMessage": return default.PIdesc[0];
 		case "fTimeFrame": return default.PIdesc[1];
 		case "iMaxPerTimeFrame": return default.PIdesc[2];
 		case "iMaxRepeat": return default.PIdesc[3];
@@ -713,7 +720,6 @@ function string LogFilename()
 defaultproperties
 {
 	bEnabled=true
-	bFriendlyMessage=false
 	fTimeFrame=1.0000
 	iMaxPerTimeFrame=2
 	iMaxRepeat=1
@@ -740,8 +746,8 @@ defaultproperties
 	WarningMutClass="ServerExt.CFWarningMut"
 
 	PICat="Chat Filter"
-	PIlabel[0]="Friendly messages"
-	PIdesc[0]="Show a friendly message when the user is kicked from the server"
+	PIlabel[0]=""
+	PIdesc[0]=""
 	PIlabel[1]="Time frame"
 	PIdesc[1]="Time frame size in which some filters apply"
 	PIlabel[2]="Max per time frame"

@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.18 2004/05/11 08:04:35 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.19 2004/05/17 21:19:04 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -155,7 +155,7 @@ function LoadWebAdmin()
 		}
 		if (i >= class'UTServerAdmin'.default.QueryHandlerClasses.Length)
 		{
-			class'UTServerAdmin'.default.QueryHandlerClasses[class'UTServerAdmin'.default.QueryHandlerClasses.Length-1] = WebQueryHandler;
+			class'UTServerAdmin'.default.QueryHandlerClasses[class'UTServerAdmin'.default.QueryHandlerClasses.Length] = WebQueryHandler;
 			class'UTServerAdmin'.static.StaticSaveConfig();
 			log("Added query handler"@WebQueryHandler, name);
 		}

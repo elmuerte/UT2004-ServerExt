@@ -6,33 +6,20 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: RSSWebQueryHandler.uc,v 1.4 2004/05/11 08:04:35 elmuerte Exp $ -->
+	<!-- $Id: RSSWebQueryHandler.uc,v 1.5 2004/05/17 21:19:04 elmuerte Exp $ -->
 *******************************************************************************/
 
-class RSSWebQueryHandler extends xWebQueryHandler;
+class RSSWebQueryHandler extends SExWebQueryHandler;
 
 var protected MutRSS MutRSS;
 
 function bool Init()
 {
-	local int i;
 	foreach AllObjects(class'MutRSS', MutRSS)
 	{
 		if (MutRSS != none) break;
 	}
-	if (MutRSS == none)
-	{
-		for (i = 0; i < QueryHandlerClasses.length; i++)
-		{
-			if (QueryHandlerClasses[i] ~= string(class))
-			{
-				QueryHandlerClasses.remove(i, 1);
-				Outer.SaveConfig();
-			}
-		}
-		return false;
-	}
-	return true;
+	return ValidateRequirements(MutRSS != none);
 }
 
 function bool Query(WebRequest Request, WebResponse Response)
