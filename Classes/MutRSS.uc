@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.19 2004/05/17 21:19:04 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.20 2004/05/31 18:21:08 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -615,7 +615,7 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 	PlayInfo.AddSetting(default.FriendlyName, "bUpdateEnabled", 	default.piDesc[9],	128, 20, "CHECK");
 	PlayInfo.AddSetting(default.FriendlyName, "iDefUpdateInterval", default.piDesc[10],	128, 20, "TEXT", "5;1:99999");
 
-	PlayInfo.AddSetting(default.FriendlyName, "RSSFeedRecordClassName", default.piDesc[13],	255, 255, "TEXT");
+	PlayInfo.AddSetting(default.FriendlyName, "RSSFeedRecordClassName", default.piDesc[13],	255, 255, "TEXT", "256");
 }
 
 static event string GetDescriptionText(string PropName)

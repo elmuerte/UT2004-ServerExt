@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ChatFilter.uc,v 1.5 2004/05/17 21:19:03 elmuerte Exp $ -->
+	<!-- $Id: ChatFilter.uc,v 1.6 2004/05/31 18:21:08 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -646,14 +646,14 @@ static function FillPlayInfo(PlayInfo PI)
 	PI.AddSetting(default.PICat, "BadnickAction", default.PIlabel[11], 10, 10, "Select", "BNA_Kick;Kick the player;BNA_Request;Request a new nickname;BNA_Ban;Ban the player;BNA_SessionBan;Ban this player for this session only");
 	PI.AddSetting(default.PICat, "bWildCardNicks", default.PIlabel[12], 10, 10, "check", "");
 
-	PI.AddSetting(default.PICat, "sWarningNotification", default.PIlabel[13], 10, 11, "Text");
-	PI.AddSetting(default.PICat, "sWarningBroadcast", default.PIlabel[14], 10, 12, "Text");
+	PI.AddSetting(default.PICat, "sWarningNotification", default.PIlabel[13], 10, 11, "Text", "999");
+	PI.AddSetting(default.PICat, "sWarningBroadcast", default.PIlabel[14], 10, 12, "Text", "999");
 	PI.AddSetting(default.PICat, "WarningAction", default.PIlabel[15], 10, 13, "Select", "CFA_Nothing;Nothing;CFA_Kick;Kick player;CFA_Ban;Ban player;CFA_SessionBan;Ban player this session;CFA_Defrag;Remove one point;CFA_Mute;Mute player for this game");
 	PI.AddSetting(default.PICat, "iMaxWarnings", default.PIlabel[16], 10, 14, "Text", "5");
 	PI.AddSetting(default.PICat, "fMinVote", default.PIlabel[17], 10, 15, "Text", "5;0:1");
 
-	PI.AddSetting(default.PICat, "sMuteMessage", default.PIlabel[18], 10, 16, "Text");
-	PI.AddSetting(default.PICat, "bShowMuted", default.PIlabel[19], 10, 17, "Text");
+	PI.AddSetting(default.PICat, "sMuteMessage", default.PIlabel[18], 10, 16, "Text", "999");
+	PI.AddSetting(default.PICat, "bShowMuted", default.PIlabel[19], 10, 17, "Check");
 
 	//CD_All;Public;CD_PrivateSpecator;Spectators are private;CD_PrivatePlayer;Specators and Players are private;
 
