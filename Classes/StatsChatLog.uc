@@ -6,7 +6,8 @@
 	(c) 2004, Michiel "El Muerte" Hendriks								<br />
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
-	$Id: StatsChatLog.uc,v 1.1 2004/03/08 08:54:05 elmuerte Exp $
+
+	<!-- $Id: StatsChatLog.uc,v 1.2 2004/03/17 00:17:26 elmuerte Exp $ -->
 *******************************************************************************/
 
 class StatsChatLog extends BroadcastHandler;

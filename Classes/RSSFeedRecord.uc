@@ -5,7 +5,8 @@
 	(c) 2004, Michiel "El Muerte" Hendriks								<br />
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
-	$Id: RSSFeedRecord.uc,v 1.2 2004/03/15 22:29:25 elmuerte Exp $
+
+	<!-- $Id: RSSFeedRecord.uc,v 1.3 2004/03/17 00:17:26 elmuerte Exp $ -->
 *******************************************************************************/
 
 class RSSFeedRecord extends LibHTTP2.NewsFeed PerObjectConfig config(RSS);

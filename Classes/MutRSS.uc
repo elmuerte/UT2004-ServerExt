@@ -5,7 +5,8 @@
 	(c) 2004, Michiel "El Muerte" Hendriks								<br />
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
-	$Id: MutRSS.uc,v 1.2 2004/03/15 22:29:25 elmuerte Exp $
+
+	<!-- $Id: MutRSS.uc,v 1.3 2004/03/17 00:17:26 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -19,17 +20,56 @@ var protected string SPACE_REPLACE;
 var() config bool bEnabled;
 
 /** should the RSS feed content be broadcasted */
-var() config bool bBroadcastEnabled;
+var(Broadcasting) config bool bBroadcastEnabled;
 /** number of seconds between broadcasts */
-var() config int fBroadcastDelay;
+var(Broadcasting) config float fBroadcastDelay;
+/** set this to true to start with a broadcast right away */
+var(Broadcasting) config bool bInitialBroadcast;
+/**
+	available broadcast methods:												<br />
+	BM_Linear:			display the lines in a row								<br />
+	BM_Random:			display random lines from all feeds						<br />
+	BM_RandomFeed:		display random lines from a single (random) feed		<br />
+	BM_Sequential:		display lines from feeds in a row						<br />
+*/
+enum EBroadcastMethods
+{
+	BM_Linear,
+	BM_Random,
+	BM_RandomFeed,
+	BM_Sequential,
+};
+/** the broadcast method to use */
+var(Broadcasting) config EBroadcastMethods BroadcastMethod;
+/** Display this many "groups" per time, see iGroupSize for more information */
+var(Broadcasting) config int iBroadcastMessages;
+/** Display groups of this size, iGroupSize=1 means only one line at the time,
+	a group size of n displays the the first min(n, length) entries starting
+	from the selected index. The total number of lines displayed is:
+	iBroadcastMessages * iGroupSize. When using BM_Linear you get the same result
+	for iBroadcastMessages=1 ; iGroupSize=2 and iBroadcastMessages=2 ; iGroupSize=1 */
+var(Broadcasting) config int iGroupSize;
+/**
+	format in wich the messages are broadcasted. The following replacements can
+	be used: 																	<br />
+		%title%			the title of the message								<br />
+		%link%			the link of the message									<br />
+		%no%			the index of the message in the feed					<br />
+		%fno%			the index of the feed									<br />
+		%ftitle%		the title of the feed									<br />
+		%flink%			the link of the feed									<br />
+		%fdesc%			the description of the feed								<br />
+*/
+var(Broadcasting) config string sBroadcastFormat;
+
 
 /** if the mutator is interactive users can use the mutate command */
 var() config bool bInteractive;
 
 /** if automatic updating of the RSS feeds should happen should happen */
-var() config bool bUpdateEnabled;
+var(Updating) config bool bUpdateEnabled;
 /** default minutes between updates of the RSS feeds, keep this high, 45 minutes is nice */
-var() config int iDefUpdateInterval;
+var(Updating) config int iDefUpdateInterval;
 
 /** contains links to the feeds */
 var protected array<RSSFeedRecord> Feeds;
@@ -37,6 +77,8 @@ var protected array<RSSFeedRecord> Feeds;
 var protected HttpSock htsock;
 /** the current location in the Feeds list that will be checked to be updated */
 var protected int UpdatePos;
+/** broadcast counters */
+var protected int nFeed, nOffset;
 
 
 // Localized strings
@@ -55,6 +97,11 @@ event PreBeginPlay()
 	InitRSS();
 }
 
+event PostBeginPlay()
+{
+	if (bBroadcastEnabled && bInitialBroadcast) Timer();
+}
+
 /** initialize RSS */
 function InitRSS()
 {
@@ -63,12 +110,18 @@ function InitRSS()
 	if (bUpdateEnabled)
 	{
 		htsock = spawn(class'HttpSock');
-		htsock.iVerbose = 255;
+		if (htsock.VERSION < 200) Error("LibHTTP version 2 or higher required");
 		htsock.OnComplete = ProcessRSSUpdate;
 		htsock.OnResolveFailed = RSSResolveFailed;
 		htsock.OnConnectionTimeout = RSSConnectionTimeout;
 		UpdatePos = 0;
 		UpdateRSSFeeds();
+	}
+	if (bBroadcastEnabled)
+	{
+		nFeed = getNextFeed(-1);
+		nOffset = 0;
+		SetTimer(fmax(fBroadcastDelay, 1), true);
 	}
 }
 
@@ -311,8 +364,87 @@ function Mutate(string MutateString, PlayerController Sender)
 	}
 }
 
+function Timer()
+{
+	local int i, j, msgSend;
+	if (nFeed == -1) return;
+	msgSend = 0;
+
+	if (BroadcastMethod == BM_RandomFeed) nFeed = getNextFeed(rand(Feeds.length));
+
+	for (i = 0; i < iBroadcastMessages; i++)
+	{
+		switch (BroadcastMethod)
+		{
+			case BM_Linear:
+				while (nOffset >= Feeds[nFeed].Titles.length)
+				{
+					nOffset -= Feeds[nFeed].Titles.length;
+					nFeed = getNextFeed(nFeed);
+					if (nFeed == -1) return;
+				}
+				break;
+			case BM_Random:
+				nFeed = getNextFeed(rand(Feeds.length));
+				if (nFeed == -1) return;
+				nOffset = rand(Feeds[nFeed].Titles.length);
+				break;
+			case BM_RandomFeed:
+				nOffset = rand(Feeds[nFeed].Titles.length);
+				break;
+			case BM_Sequential:
+				break;
+		}
+
+		// send the group
+		for (j = 0; (j < iGroupSize) && (j < Feeds[nFeed].Titles.length); j++)
+		{
+			if (sendBroadcastMessage(nFeed, nOffset)) msgSend++;
+			if (BroadcastMethod != BM_Sequential) nOffset++;
+		}
+		// or else we would skip the first feed
+		if (BroadcastMethod == BM_Sequential) nFeed = getNextFeed(nFeed);
+	}
+
+	if (BroadcastMethod == BM_Sequential)
+	{
+		nOffset += iGroupSize;
+		if (msgSend == 0) nOffset = 0; // wrap
+	}
+}
+
+/** find the next enabled feed */
+function int getNextFeed(int currentFeed)
+{
+	local int i, x;
+	for (i = 1; i < Feeds.length+1; i++)
+	{
+		x = (currentFeed + i) % Feeds.length;
+		if (Feeds[x].rssEnabled) return x;
+	}
+	log("No enabled RSS Feeds found", name);
+	return -1;
+}
+
+/** format the feeds message and broadcast it */
+function bool sendBroadcastMessage(int sFeed, int sOffset)
+{
+	local string tmp;
+	if ((sFeed < 0) || (sFeed > Feeds.Length)) return false;
+	if ((sOffset < 0) || (sOffset > Feeds[sFeed].Titles.Length)) return false;
+	tmp = repl(sBroadcastFormat, "%title%", Feeds[sFeed].Titles[sOffset]);
+	tmp = repl(tmp, "%links%", Feeds[sFeed].Links[sOffset]);
+	tmp = repl(tmp, "%no%", sOffset);
+	tmp = repl(tmp, "%fno%", sFeed);
+	tmp = repl(tmp, "%ftitle%", Feeds[sFeed].ChanTitle);
+	tmp = repl(tmp, "%flink%", Feeds[sFeed].ChanLink);
+	tmp = repl(tmp, "%fdesc%", Feeds[sFeed].ChanDesc);
+	SendMessage(ColorCode(Feeds[sFeed].TextColor)$tmp);
+	return true;
+}
+
 /** translates a color to a string code */
-function string ColorCode(color in)
+static function string ColorCode(color in)
 {
 	return Chr(27)$Chr(in.R)$Chr(in.G)$Chr(in.B);
 }
@@ -325,7 +457,12 @@ defaultproperties
 
 	bEnabled=true
 	bBroadcastEnabled=true
-	fBroadcastDelay=300
+	fBroadcastDelay=60
+	bInitialBroadcast=false
+	BroadcastMethod=BM_Sequential
+	iBroadcastMessages=2
+	iGroupSize=1
+	sBroadcastFormat="%title% [%ftitle%]"
 	bInteractive=true
 	bUpdateEnabled=true
 	iDefUpdateInterval=45

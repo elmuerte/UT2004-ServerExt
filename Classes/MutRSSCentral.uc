@@ -4,7 +4,8 @@
 	(c) 2004, Michiel "El Muerte" Hendriks								<br />
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
-	$Id: MutRSSCentral.uc,v 1.1 2004/03/15 13:04:36 elmuerte Exp $
+
+	<!-- $Id: MutRSSCentral.uc,v 1.2 2004/03/17 00:17:26 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSSCentral extends MutRSS config (RSS);
