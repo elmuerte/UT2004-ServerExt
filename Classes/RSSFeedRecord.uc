@@ -6,36 +6,19 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: RSSFeedRecord.uc,v 1.3 2004/03/17 00:17:26 elmuerte Exp $ -->
+	<!-- $Id: RSSFeedRecord.uc,v 1.4 2004/03/18 07:39:20 elmuerte Exp $ -->
 *******************************************************************************/
 
-class RSSFeedRecord extends LibHTTP2.NewsFeed PerObjectConfig config(RSS);
+class RSSFeedRecord extends LibHTTP2.NewsFeed config(RSS);
 
-/** name of this object */
-var config string rssHost;
-/** download location */
-var config string rssLocation;
-/** true if this feed is enabled */
-var config bool rssEnabled;
-/** minutes between updates, make this a nice value like 45 minutes */
-var config int rssUpdateInterval;
 /** the color to use when displaying the content of this feed */
-var config color TextColor;
-
-// RSS Entries
-/** RSS Channel values */
-var config string ChanTitle, ChanLink, ChanDesc;
-/** UNIX timestamp of the last update */
-var config int TimeStamp;
-/** titles of the entries, maps 1 on 1 with Links */
-var config array<string> Titles;
-/** links of the entries, maps 1 on 1 with Titles */
-var config array<string> Links;
+var(Config) config color TextColor;
 
 struct HTMLSpecialCharItem
 {
 	var string from, to;
 };
+/** HTML special char replacement table */
 var array<HTMLSpecialCharItem> HTMLSpecialChars;
 
 /** update the current feed, needs a HttpSock because we want to make use of the internal caching */
@@ -52,18 +35,14 @@ function ProcessData(HttpSock sock)
 
 	if (ParseRDFData(sock.ReturnData) > 0)
 	{
-		ChanTitle = ChannelTitle;
-		ChanLink = ChannelLink;
-		ChanDesc = ChannelDescription;
-		Titles.Length = Entries.Length;
-		Links.Length = Entries.Length;
 		for (i = 0; i < Entries.Length; i++)
 		{
-			Titles[i] = fixHTMLSpecialsChars(Entries[i].Title);
-			Links[i] = fixHTMLSpecialsChars(Entries[i].Link);
+			Entries[i].Title = fixHTMLSpecialsChars(Entries[i].Title);
+			Entries[i].Link = fixHTMLSpecialsChars(Entries[i].Link);
+			Entries[i].Desc = fixHTMLSpecialsChars(Entries[i].Desc);
 		}
 
-		TimeStamp = sock.now();
+		LastUpdate = sock.now();
 		SaveConfig();
 		Log("Updated RSS Feed"@rssHost, name);
 	}

@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.3 2004/03/17 00:17:26 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.4 2004/03/18 07:39:20 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -54,6 +54,7 @@ var(Broadcasting) config int iGroupSize;
 	be used: 																	<br />
 		%title%			the title of the message								<br />
 		%link%			the link of the message									<br />
+		%desc%			the content/description of the message					<br />
 		%no%			the index of the message in the feed					<br />
 		%fno%			the index of the feed									<br />
 		%ftitle%		the title of the feed									<br />
@@ -85,6 +86,9 @@ var protected int nFeed, nOffset;
 var localized string msgAdded, msgDupName, msgDupLoc, msgRemoved, msgDisabledFeed,
 	msgEnabledFeed, msgUpdateFeed, msgDisabledMut, msgEnabledMut, msgEmpty,
 	msgDisabled, msgList, msgMutDisabled, msgListEntry, msgShowEntry, msgShow;
+/** Play Info descriptions */
+var localized string piDesc[11];
+var localized string piOpt[2];
 
 event PreBeginPlay()
 {
@@ -154,7 +158,7 @@ function UpdateRSSFeeds()
 	for (UpdatePos = UpdatePos; UpdatePos < Feeds.Length; UpdatePos++)
 	{
 		if (!Feeds[UpdatePos].rssEnabled) continue;
-		if (Feeds[UpdatePos].TimeStamp < htsock.now()-(Feeds[UpdatePos].rssUpdateInterval*60))
+		if (Feeds[UpdatePos].LastUpdate < htsock.now()-(Feeds[UpdatePos].rssUpdateInterval*60))
 		{
 			Feeds[UpdatePos].Update(htsock);
 			return;
@@ -229,8 +233,6 @@ function Mutate(string MutateString, PlayerController Sender)
 
 	super.Mutate(MutateString, Sender);
 
-	Sender.PlayerReplicationInfo.bAdmin = true; // mwuaha.. remove this you IDIOT
-
 	if (bInteractive)
 	{
 		if (split(MutateString, " ", cmd) < 2) return;
@@ -254,13 +256,13 @@ function Mutate(string MutateString, PlayerController Sender)
 			SendMessage(msgList, Sender);
 			for (i = 0; i < Feeds.Length; i++)
 			{
-				tmp2 = Feeds[i].ChanTitle;
+				tmp2 = Feeds[i].ChannelTitle;
 				if (tmp2 == "") tmp2 = Feeds[i].rssHost;
 				tmp = repl(msgListEntry, "%title%", tmp2);
 				if (!Feeds[i].rssEnabled) tmp = repl(tmp, "%disabled%", msgDisabled);
 				else tmp = repl(tmp, "%disabled%", "");
 				tmp = repl(tmp, "%n%", i);
-				tmp = repl(tmp, "%desc%", Feeds[i].ChanDesc);
+				tmp = repl(tmp, "%desc%", Feeds[i].ChannelLink);
 				SendMessage(ColorCode(Feeds[i].TextColor)$tmp, Sender);
 			}
 		}
@@ -269,30 +271,29 @@ function Mutate(string MutateString, PlayerController Sender)
 			if (cmd.Length > 2) m = int(cmd[2]);
 			m = clamp(0, m, Feeds.Length);
 			if (cmd.Length > 3) n = int(cmd[3]); else n = 5; // TODO: config
-			n = clamp(1, n, Feeds[m].Titles.Length);
+			n = clamp(1, n, Feeds[m].Entries.Length);
 
-			tmp2 = Feeds[m].ChanTitle;
+			tmp2 = Feeds[m].ChannelTitle;
 			if (tmp2 == "") tmp2 = Feeds[m].rssHost;
 			tmp = repl(msgShow, "%title%", tmp2);
 			if (!Feeds[m].rssEnabled) tmp = repl(tmp, "%disabled%", msgDisabled);
 			else tmp = repl(tmp, "%disabled%", "");
 			tmp = repl(tmp, "%n%", i);
-			tmp = repl(tmp, "%desc%", Feeds[m].ChanDesc);
+			tmp = repl(tmp, "%desc%", Feeds[m].ChannelDescription);
 			SendMessage(ColorCode(Feeds[m].TextColor)$tmp, Sender);
-			for (i = 0; (i < n) && (i < Feeds[m].Titles.Length); i++)
+			for (i = 0; (i < n) && (i < Feeds[m].Entries.Length); i++)
 			{
-				tmp = repl(msgShowEntry, "%title%", Feeds[m].Titles[i]);
-				tmp = repl(tmp, "%link%", Feeds[m].Links[i]);
+				tmp = repl(msgShowEntry, "%title%", Feeds[m].Entries[i].Title);
+				tmp = repl(tmp, "%link%", Feeds[m].Entries[i].Link);
 				tmp = repl(tmp, "%n%", i);
 				SendMessage(ColorCode(Feeds[m].TextColor)$tmp, Sender);
 			}
-			if (Feeds[m].Titles.Length == 0) SendMessage(msgEmpty, Sender);
+			if (Feeds[m].Entries.Length == 0) SendMessage(msgEmpty, Sender);
 		}
 		// Admin commands
 		else if ((cmd[1] ~= "stop") && (Sender.PlayerReplicationInfo.bAdmin))
 		{
 			bEnabled = false;
-			// TODO: Stop timer
 			SendMessage(msgDisabledMut, Sender);
 		}
 		else if ((cmd[1] ~= "update") && (Sender.PlayerReplicationInfo.bAdmin))
@@ -300,26 +301,26 @@ function Mutate(string MutateString, PlayerController Sender)
 			if (cmd.Length > 2) m = int(cmd[2]); else return;
 			if ((m == 0) && (cmd[2] != "0")) return;
 			if ((m < 0) || (m > Feeds.Length-1)) return;
-      		if (UpdatePos < Feeds.Length) return; // TODO: add warning
-      		UpdatePos = m;
-      		Feeds[m].Update(htsock);
-      		SendMessage(repl(msgUpdateFeed, "%s", Feeds[m].rssHost), Sender);
+	  		if (UpdatePos < Feeds.Length) return; // TODO: add warning
+	  		UpdatePos = m;
+	  		Feeds[m].Update(htsock);
+	  		SendMessage(repl(msgUpdateFeed, "%s", Feeds[m].rssHost), Sender);
 		}
 		else if ((cmd[1] ~= "enable") && (Sender.PlayerReplicationInfo.bAdmin))
 		{
 			if (cmd.Length > 2) m = int(cmd[2]); else return;
 			if ((m == 0) && (cmd[2] != "0")) return;
 			if ((m < 0) || (m > Feeds.Length-1)) return;
-      		Feeds[m].rssEnabled = true;
-      		SendMessage(repl(msgEnabledFeed, "%s", Feeds[m].rssHost), Sender);
+	  		Feeds[m].rssEnabled = true;
+	  		SendMessage(repl(msgEnabledFeed, "%s", Feeds[m].rssHost), Sender);
 		}
 		else if ((cmd[1] ~= "disable") && (Sender.PlayerReplicationInfo.bAdmin))
 		{
 			if (cmd.Length > 2) m = int(cmd[2]); else return;
 			if ((m == 0) && (cmd[2] != "0")) return;
 			if ((m < 0) || (m > Feeds.Length-1)) return;
-      		Feeds[m].rssEnabled = false;
-      		SendMessage(repl(msgDisabledFeed, "%s", Feeds[m].rssHost), Sender);
+	  		Feeds[m].rssEnabled = false;
+	  		SendMessage(repl(msgDisabledFeed, "%s", Feeds[m].rssHost), Sender);
 		}
 		else if ((cmd[1] ~= "remove") && (Sender.PlayerReplicationInfo.bAdmin))
 		{
@@ -329,7 +330,7 @@ function Mutate(string MutateString, PlayerController Sender)
 			tmp = Feeds[m].rssHost;
 			Feeds[m].ClearConfig();
 			Feeds.Remove(m, 1);
-      		SendMessage(repl(msgRemoved, "%s", tmp), Sender);
+	  		SendMessage(repl(msgRemoved, "%s", tmp), Sender);
 		}
 		else if ((cmd[1] ~= "add") && (Sender.PlayerReplicationInfo.bAdmin))
 		{
@@ -367,6 +368,7 @@ function Mutate(string MutateString, PlayerController Sender)
 function Timer()
 {
 	local int i, j, msgSend;
+	if (!bEnabled || !bBroadcastEnabled) return;
 	if (nFeed == -1) return;
 	msgSend = 0;
 
@@ -377,9 +379,9 @@ function Timer()
 		switch (BroadcastMethod)
 		{
 			case BM_Linear:
-				while (nOffset >= Feeds[nFeed].Titles.length)
+				while (nOffset >= Feeds[nFeed].Entries.length)
 				{
-					nOffset -= Feeds[nFeed].Titles.length;
+					nOffset -= Feeds[nFeed].Entries.length;
 					nFeed = getNextFeed(nFeed);
 					if (nFeed == -1) return;
 				}
@@ -387,17 +389,17 @@ function Timer()
 			case BM_Random:
 				nFeed = getNextFeed(rand(Feeds.length));
 				if (nFeed == -1) return;
-				nOffset = rand(Feeds[nFeed].Titles.length);
+				nOffset = rand(Feeds[nFeed].Entries.length);
 				break;
 			case BM_RandomFeed:
-				nOffset = rand(Feeds[nFeed].Titles.length);
+				nOffset = rand(Feeds[nFeed].Entries.length);
 				break;
 			case BM_Sequential:
 				break;
 		}
 
 		// send the group
-		for (j = 0; (j < iGroupSize) && (j < Feeds[nFeed].Titles.length); j++)
+		for (j = 0; (j < iGroupSize) && (j < Feeds[nFeed].Entries.length); j++)
 		{
 			if (sendBroadcastMessage(nFeed, nOffset)) msgSend++;
 			if (BroadcastMethod != BM_Sequential) nOffset++;
@@ -431,14 +433,15 @@ function bool sendBroadcastMessage(int sFeed, int sOffset)
 {
 	local string tmp;
 	if ((sFeed < 0) || (sFeed > Feeds.Length)) return false;
-	if ((sOffset < 0) || (sOffset > Feeds[sFeed].Titles.Length)) return false;
-	tmp = repl(sBroadcastFormat, "%title%", Feeds[sFeed].Titles[sOffset]);
-	tmp = repl(tmp, "%links%", Feeds[sFeed].Links[sOffset]);
+	if ((sOffset < 0) || (sOffset > Feeds[sFeed].Entries.Length)) return false;
+	tmp = repl(sBroadcastFormat, "%title%", Feeds[sFeed].Entries[sOffset].Title);
+	tmp = repl(tmp, "%links%", Feeds[sFeed].Entries[sOffset].Link);
+	tmp = repl(tmp, "%desc%", Feeds[sFeed].Entries[sOffset].Desc);
 	tmp = repl(tmp, "%no%", sOffset);
 	tmp = repl(tmp, "%fno%", sFeed);
-	tmp = repl(tmp, "%ftitle%", Feeds[sFeed].ChanTitle);
-	tmp = repl(tmp, "%flink%", Feeds[sFeed].ChanLink);
-	tmp = repl(tmp, "%fdesc%", Feeds[sFeed].ChanDesc);
+	tmp = repl(tmp, "%ftitle%", Feeds[sFeed].ChannelTitle);
+	tmp = repl(tmp, "%flink%", Feeds[sFeed].ChannelLink);
+	tmp = repl(tmp, "%fdesc%", Feeds[sFeed].ChannelDescription);
 	SendMessage(ColorCode(Feeds[sFeed].TextColor)$tmp);
 	return true;
 }
@@ -447,6 +450,26 @@ function bool sendBroadcastMessage(int sFeed, int sOffset)
 static function string ColorCode(color in)
 {
 	return Chr(27)$Chr(in.R)$Chr(in.G)$Chr(in.B);
+}
+
+static function FillPlayInfo(PlayInfo PlayInfo)
+{
+	Super.FillPlayInfo(PlayInfo);
+	PlayInfo.AddSetting(default.FriendlyName, "bEnabled", 			default.piDesc[0],	128, 1, "CHECK");
+
+	PlayInfo.AddSetting(default.FriendlyName, "bBroadcastEnabled", 	default.piDesc[1],	107, 10, "CHECK");
+	PlayInfo.AddSetting(default.FriendlyName, "fBroadcastDelay", 	default.piDesc[2],	107, 11, "TEXT", "10;1:9999");
+	PlayInfo.AddSetting(default.FriendlyName, "bInitialBroadcast", 	default.piDesc[3],	107, 12, "CHECK");
+	PlayInfo.AddSetting(default.FriendlyName, "BroadcastMethod", 	default.piDesc[4],	106, 13, "SELECT", default.piOpt[0]);
+	PlayInfo.AddSetting(default.FriendlyName, "iBroadcastMessages",	default.piDesc[5],	105, 14, "TEXT", "2;1:99");
+	PlayInfo.AddSetting(default.FriendlyName, "iGroupSize", 		default.piDesc[6],	105, 15, "TEXT", "2;1:99");
+	PlayInfo.AddSetting(default.FriendlyName, "sBroadcastFormat", 	default.piDesc[7],	104, 16, "TEXT");
+
+	PlayInfo.AddSetting(default.FriendlyName, "bInteractive", 		default.piDesc[8],	 97, 20, "CHECK");
+
+	PlayInfo.AddSetting(default.FriendlyName, "bUpdateEnabled", 	default.piDesc[9],	128, 20, "CHECK");
+	PlayInfo.AddSetting(default.FriendlyName, "iDefUpdateInterval", default.piDesc[10],	128, 20, "TEXT", "5;1:99999");
+
 }
 
 defaultproperties
@@ -483,4 +506,17 @@ defaultproperties
 	msgListEntry="(%n%) %title%%disabled% - %desc%"
 	msgShow="-  %title%  -"
 	msgShowEntry="%title% - %link%"
+
+	piOpt[0]="BM_Linear;Linear;BM_Random;Random;BM_RandomFeed;Random Feed;BM_Sequential;Sequential"
+	piDesc[0]="Global enable switch"
+	piDesc[1]="Broadcast enabled"
+	piDesc[2]="Broadcast delay"
+	piDesc[3]="Initial broadcast"
+	piDesc[4]="Broadcast method"
+	piDesc[5]="Number of messages"
+	piDesc[6]="Message group size"
+	piDesc[7]="Broadcast format"
+	piDesc[8]="Interactive"
+	piDesc[9]="Updating enabled"
+	piDesc[10]="Default update time"
 }
