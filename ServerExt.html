@@ -113,7 +113,8 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 	<li>Removed bFriendlymessage from ChatFilter, friendly messages are now always used and doesn't require the client side package</li>
 	<li>Added reserved slot feature</li>
 	<li>Added team balancer mutator</li>
-	<li>fixed chat logging for spectators, requires an updated version of utstatsdb before it work (any version newer than 2.21)</li>
+	<li>Fixed chat logging for spectators, requires an updated version of utstatsdb before it work (any version newer than 2.21)</li>
+	<li>Fixed gamepassword not being passed by ServQuery</li>
 </ul>
 
 <h3>Changes since v103</h3>
@@ -814,8 +815,10 @@ bIgnoreReservedSlots=false
 bBotsBalance=true
 bAddBots=true
 iMaxBots=-1
+bBotsFill=false
 bSwitchPlayersBack=true
 bBalanceNewest=true
+bBalanceWorst=false
 </pre>
 <dl>
 	<dt>bAnnounce</dt>
@@ -854,6 +857,9 @@ bBalanceNewest=true
 	<dt>iMaxBots</dt>
 	<dd>The absolute maximum number of bots allowed. If set to -1 it will use the maximum recommended player count for the current map, if set to
 	-2 it will use the minimum recommended player count (both corrected with the current player count).</dd>
+
+	<dt>bBotsFill</dt>
+	<dd>When the game isn't unbalanced, but the team sizes are not equal bots will correct the team size</dd>
 
 	<dt>bSwitchPlayersBack</dt>
 	<dd>If a user switches team when the teams are unbalanced switch the user back to his old team (when he tried to join the bigger team). If set

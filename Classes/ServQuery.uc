@@ -6,12 +6,12 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ServQuery.uc,v 1.2 2004/03/27 23:13:19 elmuerte Exp $ -->
+	<!-- $Id: ServQuery.uc,v 1.3 2004/05/27 07:19:55 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ServQuery extends UdpGameSpyQuery;
 
-const VERSION = "200";
+const VERSION = "201";
 
 /** verbosity level */
 var config bool bVerbose;
@@ -237,21 +237,21 @@ function string GetRules()
 
 	changedpass = false;
 	Level.Game.GetServerDetails( ServerState );
-	for( i=0;i<ServerState.ServerInfo.Length;i++ )
+
+	if( Level.Game.AccessControl != None && Level.Game.AccessControl.RequiresPassword() )
 	{
-		if (ServerState.ServerInfo[i].Key ~= "password")
-		{
-			changedpass = true;
-			ServerState.ServerInfo[i].Value = "1";
-		}
+		i = ServerState.ServerInfo.Length;
+		ServerState.ServerInfo.Length = i+1;
+		ServerState.ServerInfo[i].Key = "password";
+		ServerState.ServerInfo[i].Value = "1";
 	}
-	if (changedpass == false)
-	{
+	else {
 		i = ServerState.ServerInfo.Length;
 		ServerState.ServerInfo.Length = i+1;
 		ServerState.ServerInfo[i].Key = "password";
 		ServerState.ServerInfo[i].Value = "0";
 	}
+
 	for( i=0 ; i < ServerState.ServerInfo.Length ; i++ )
 		ResultSet = ResultSet$"\\"$ServerState.ServerInfo[i].Key$"\\"$FixPlayerName(ServerState.ServerInfo[i].Value);
 	return ResultSet;

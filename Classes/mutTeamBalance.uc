@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: mutTeamBalance.uc,v 1.4 2004/05/25 20:17:21 elmuerte Exp $ -->
+	<!-- $Id: mutTeamBalance.uc,v 1.5 2004/05/27 07:19:55 elmuerte Exp $ -->
 *******************************************************************************/
 class mutTeamBalance extends Mutator;
 
@@ -56,6 +56,11 @@ var(BotBalance) config bool bAddBots;
 	player count
 */
 var(BotBalance) config int iMaxBots;
+/**
+	if the team balance isn't odd, but the sizes are not equal use bots to correct
+	this issue;
+*/
+var(BotBalance) config bool bBotsFill;
 
 /** if a player switches team and it unbalances the team switch the player back,
 	if this is not set the default balacing will be applied */
@@ -72,6 +77,9 @@ var(PlayerBalance) config bool bBalanceNewest;
 */
 var(PlayerBalance) config bool bBalanceWorst;
 
+/** log debug messages */
+var(DebugConfig) config bool bDebug;
+
 /** player team history, used to check if a player changed teams */
 struct TeamRecordEntry
 {
@@ -82,7 +90,7 @@ struct TeamRecordEntry
 var array<TeamRecordEntry> TeamRecords;
 
 //!Localization
-var localized string msgNotUnbalanced, msgAdminRequired, PIdesc[14], PIhelp[14],
+var localized string msgNotUnbalanced, msgAdminRequired, PIdesc[15], PIhelp[15],
 	PIgroup;
 
 function PreBeginPlay()
@@ -93,6 +101,7 @@ function PreBeginPlay()
 	if (TeamGame == none)
 	{
 		Error("Current game is NOT a team game type");
+		return;
 	}
 	if (bIgnoreReservedSlots)
 	{
@@ -172,6 +181,7 @@ function NotifyLogout(Controller Exiting)
 		if (fTeamBalanceDelay < 0.5) Balance();
 		else SetTimer(fTeamBalanceDelay, false);
 	}
+	else if (bBotsFill) CorrectBots();
 }
 
 /** for the delayed balance call */
@@ -183,7 +193,11 @@ event Timer()
 		return;
 	}
 	if (Level.Game.bGameEnded) return;
-	if (!OddTeams()) return; // check again
+	if (!OddTeams())// check again
+	{
+		if (bBotsFill) CorrectBots();
+		return;
+	}
 	Balance();
 }
 
@@ -207,7 +221,7 @@ function PCTeamSwitch(PlayerController PC)
 	{
 		if (OddTeams())
 		{
-			log("DEBUG: team change in an unbalanced game", name);
+			if (bDebug) log("DEBUG: team change in an unbalanced game", name);
 			if (!bSwitchPlayersBack)
 			{
 				if (fTeamBalanceDelay < 0.5) Balance();
@@ -216,12 +230,13 @@ function PCTeamSwitch(PlayerController PC)
 			else {
 				if (!IsSmallest(TeamRecords[i].PC.PlayerReplicationInfo.Team.TeamIndex))
 				{
-					log("DEBUG: force player to old team", name);
+					if (bDebug) log("DEBUG: force player to old team", name);
 					TeamRecords[i].PC.ServerChangeTeam(TeamRecords[i].Team);
 					return;
 				}
 			}
 		}
+		else if (bBotsFill) CorrectBots();
 		TeamRecords[i].Team = TeamRecords[i].PC.PlayerReplicationInfo.Team.TeamIndex;
 	}
 }
@@ -234,7 +249,7 @@ function bool OddTeams(optional int incTeamX)
 	local float j;
 	i = TeamGame.Teams[0].Size - TeamGame.Teams[1].Size + incTeamX;
 	if (i == 0) return false;
-	log("DEBUG: difference = "$i@"team 0:"@TeamGame.Teams[0].Size@"team 1:"@TeamGame.Teams[1].Size@"incTeamX:"@incTeamX, name);
+	if (bDebug) log("DEBUG: difference = "$i@"team 0:"@TeamGame.Teams[0].Size@"team 1:"@TeamGame.Teams[1].Size@"incTeamX:"@incTeamX, name);
 	if (!bIgnoreWinning)
 	{
 		j = TeamGame.Teams[0].Score - TeamGame.Teams[1].Score;
@@ -259,8 +274,8 @@ function Balance()
 	local PlayerController PC;
 	local array<PlayerController> PCs;
 
-	log("Balancing teams...", name);
-	log("STAGE 0", name);
+	if (bDebug) log("Balancing teams...", name);
+	if (bDebug) log("STAGE 0", name);
 	if (TeamGame.Teams[0].Size < TeamGame.Teams[1].Size)
 	{
 		target = TeamGame.Teams[0];
@@ -273,12 +288,12 @@ function Balance()
 	diff = (source.size - target.size) / 2;
 	if (diff == 0) return;
 
-	log("STAGE 1 - diff = "$diff, name);
+	if (bDebug) log("STAGE 1 - diff = "$diff, name);
 	if (bBotsBalance && (TeamGame.MinPlayers > 0 || TeamGame.NumBots > 0))
 	{
 		if (bAddBots)
 		{
-			log("STAGE 1a - diff = "$diff, name);
+			if (bDebug) log("STAGE 1a - diff = "$diff, name);
 			i = diff - TeamGame.NumBots;
 			j = iMaxBots;
 			switch (j)
@@ -287,24 +302,24 @@ function Balance()
 				case -2:	j = Level.IdealPlayerCountMin-TeamGame.NumPlayers;
 			}
 			j -= TeamGame.NumBots;
-			log("DEBUG: iMaxBots = "$j, name);
+			if (bDebug) log("DEBUG: iMaxBots = "$j, name);
 			i = min(i, j);
 			if (i > 0)
 			{
-				log("DEBUG: adding"@i@"bots", name);
+				if (bDebug) log("DEBUG: adding"@i@"bots", name);
 				TeamGame.AddBots(i);
 				diff -= i;
 			}
 		}
 		// rearrage bots
-		log("STAGE 1b - diff = "$diff, name);
+		if (bDebug) log("STAGE 1b - diff = "$diff, name);
 		for (C = Level.ControllerList; C != none; C = C.nextController)
 		{
 			if (C.PlayerReplicationInfo.bBot && C.PlayerReplicationInfo.Team == source)
 			{
 				if (IsKeyPlayer(C)) continue; // prevent switch when carring
 
-				log("DEBUG: force team change for bot"@C.PlayerReplicationInfo.PlayerName, name);
+				if (bDebug) log("DEBUG: force team change for bot"@C.PlayerReplicationInfo.PlayerName, name);
 				if (TeamGame.ChangeTeam(C, target.TeamIndex, true))
 				{
 					if (C.Pawn != none) C.Pawn.PlayerChangedTeam();
@@ -315,7 +330,7 @@ function Balance()
 		}
 	}
 	// rearange humans
-	log("STAGE 2a - diff = "$diff, name);
+	if (bDebug) log("STAGE 2a - diff = "$diff, name);
 	for (C = Level.ControllerList; C != none; C = C.nextController)
 	{
 		if (C.bIsPlayer && !C.PlayerReplicationInfo.bBot && C.PlayerReplicationInfo.Team == source)
@@ -328,7 +343,7 @@ function Balance()
 			PCs[PCs.length] = PlayerController(C);
 		}
 	}
-	log("STAGE 2b - diff = "$diff, name);
+	if (bDebug) log("STAGE 2b - diff = "$diff, name);
 	// sort the list
 	for (i = 0; i < PCs.length-1; i++)
 	{
@@ -363,10 +378,43 @@ function Balance()
 	}
 	for (i = 0; i < PCs.length; i++)
 	{
-		log("DEBUG: force team change for player"@PCs[i].PlayerReplicationInfo.PlayerName, name);
+		if (bDebug) log("DEBUG: force team change for player"@PCs[i].PlayerReplicationInfo.PlayerName, name);
 		PCs[i].ServerChangeTeam(target.TeamIndex);
 		diff--;
 		if (diff <= 0) return;
+	}
+}
+
+/** will add/remove bots so that both teams have the equal size */
+function CorrectBots()
+{
+	local Controller C;
+	local UnrealTeamInfo team;
+	local int diff;
+
+	if (TeamGame.Teams[0].Size == TeamGame.Teams[1].Size) return;
+	if (TeamGame.MinPlayers <= 0 && TeamGame.NumBots <= 0) return; // no bot game
+
+	diff = abs(TeamGame.Teams[0].Size - TeamGame.Teams[1].Size);
+	if (TeamGame.NumBots+TeamGame.NumPlayers > TeamGame.MinPlayers)
+	{
+		if (bDebug) log("DEBUG: CorrectBots - removing bots:"@diff, name);
+		if (TeamGame.Teams[0].Size < TeamGame.Teams[1].Size) team = TeamGame.Teams[1];
+		else team = TeamGame.Teams[0];
+		for (C = Level.ControllerList; C != none; C = C.nextController)
+		{
+			if (C.PlayerReplicationInfo.Team == team)
+			{
+				if (IsKeyPlayer(C)) continue;
+				TeamGame.KillBot(C);
+				diff--;
+			}
+		}
+		if (diff <= 0) return;
+	}
+	else {
+		if (bDebug) log("DEBUG: CorrectBots - adding bots:"@diff, name);
+		TeamGame.AddBots(diff);
 	}
 }
 
@@ -431,6 +479,7 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 	PlayInfo.AddSetting(default.PIgroup, "bBotsBalance",			default.PIdesc[8],  75, 0, "Check",,, True);
 	PlayInfo.AddSetting(default.PIgroup, "bAddBots",				default.PIdesc[9],  75, 0, "Check",,, True);
 	PlayInfo.AddSetting(default.PIgroup, "iMaxBots",				default.PIdesc[10], 75, 0, "Text", "3;-2:999",, True);
+	PlayInfo.AddSetting(default.PIgroup, "bBotsFill",				default.PIdesc[14], 75, 0, "Check",,, True);
 
 	PlayInfo.AddSetting(default.PIgroup, "bSwitchPlayersBack",		default.PIdesc[11], 75, 0, "Check",,, True);
 	PlayInfo.AddSetting(default.PIgroup, "bBalanceNewest",			default.PIdesc[12], 75, 0, "Check",,, True);
@@ -454,6 +503,7 @@ static event string GetDescriptionText(string PropName)
 		case "bBotsBalance":			return default.PIhelp[8];
 		case "bAddBots":				return default.PIhelp[9];
 		case "iMaxBots":				return default.PIhelp[10];
+		case "bBotsFill":				return default.PIhelp[14];
 
 		case "bSwitchPlayersBack":		return default.PIhelp[11];
 		case "bBalanceNewest":			return default.PIhelp[12];
@@ -482,10 +532,13 @@ defaultProperties
 	bBotsBalance=true
 	bAddBots=true
 	iMaxBots=-1
+	bBotsFill=false
 
 	bSwitchPlayersBack=true
 	bBalanceNewest=true
 	bBalanceWorst=false
+
+	bDebug=false
 
 	msgNotUnbalanced="The teams are NOT unbalanced"
 	msgAdminRequired="Only administrators can request to balance the teams."
@@ -520,4 +573,6 @@ defaultProperties
 	PIhelp[12]="Balance the players based on their join time"
 	PIdesc[13]="Balance worst players"
 	PIhelp[13]="Balance the players based on their score/death ration. The worst are balanced first. if neither bBalanceNewest or bBalanceWorst are set players are randomly balanced."
+	PIdesc[14]="Bots file the gap"
+	PIhelp[14]="When the game isn't unbalanced, but the team sizes are not equal bots will correct the team size"
 }
