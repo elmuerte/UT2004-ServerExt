@@ -1,0 +1,6 @@
+Lee Seats
+- team balancer
+- reserved slots
+
+PoW
+- different actions for different words
