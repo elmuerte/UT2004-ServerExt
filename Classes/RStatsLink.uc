@@ -7,15 +7,20 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: RStatsLink.uc,v 1.1 2004/09/28 08:12:37 elmuerte Exp $ -->
+	<!-- $Id: RStatsLink.uc,v 1.2 2004/10/01 10:10:14 elmuerte Exp $ -->
 *******************************************************************************/
 
-class RStatsLink extends MasterServerGameStats;
+class RStatsLink extends Info;
 
 /**
 	Destination url to post to.
 */
 var config string PostURL;
+/**
+	This name/value combination will be added to the request. You can use this
+	to pass along a password with the request.
+*/
+var config string SecretName, SecretValue;
 
 /**
 	Maximum buffer size allowed, data won't be posted until the buffer exceeds
@@ -49,7 +54,7 @@ var protected int lastSeq;
 /** local copy of the server host */
 var protected string serverHost;
 /** time of the match start */
-var protected string gameTimestamp;
+var protected string gameDateTime;
 
 /** spawn our post socket */
 function PreBeginPlay()
@@ -59,7 +64,8 @@ function PreBeginPlay()
 	if (PostURL != "")
 	{
 		sock = spawn(class'HttpSock');
-		gameTimestamp = string(sock.now());
+		gameDateTime = class'HttpUtil'.static.timestampToString(sock.now(),,"2822");
+		gameDateTime = repl(gameDateTime, " +0000", "");
 		sock.OnComplete = PostComplete;
 		sock.OnConnectionTimeout = PostTimeout;
 		sock.OnConnectError = PostConnectError;
@@ -83,7 +89,6 @@ function BeginPlay()
 	il.GetLocalIP(addr);
 	serverHost = il.IpAddrToString(addr);
 	serverHost = Left(serverHost, InStr(serverHost, ":"));
-	log("ServerHost ="@serverHost);
 }
 
 /** add this line to the buffer */
@@ -108,9 +113,26 @@ function int CalcBufferSize()
 /** flush the last piece of stats */
 function FinalFlush()
 {
+	local int i, j;
 	if (sock == none) return;
 	sock.TransferMode = TM_Fast; // switch to fast transfer mode
-	FlushBuffer();
+	if (BufferCache.length == 0) BufferCache.length = 1;
+	// merging buffers
+	for (i = 1; i < BufferCache.length; i++)
+	{
+		for (j = 0; j < BufferCache[i].buffer.Length; j++)
+		{
+			BufferCache[0].buffer[BufferCache[0].buffer.length] = BufferCache[i].buffer[j];
+		}
+	}
+	if (BufferCache.length > 1) BufferCache.length = 1;
+	for (i = 0; i < Buffer.Length; i++)
+	{
+		BufferCache[0].buffer[BufferCache[0].buffer.length] = Buffer[i];
+	}
+	Buffer.length = 0;
+	if (BufferCache[0].buffer.length == 0) return;
+	SendBuffer(0);
 }
 
 /** post the buffer data */
@@ -118,6 +140,7 @@ function FlushBuffer()
 {
 	local int i;
 	if (sock == none) return;
+	if (buffer.length == 0) return;
 
 	i = BufferCache.length;
 	BufferCache.length = i+1;
@@ -137,15 +160,16 @@ function SendBuffer(int i)
 	sock.clearFormData();
 	sock.setFormData("serverHost", serverHost);
 	sock.setFormData("serverName", level.game.StripColor(level.Game.GameReplicationInfo.ServerName));
-	sock.setFormData("serverPort", string(level.game.GetServerPort()));
-	sock.setFormData("gameTimestamp", gameTimestamp);
-	sock.setFormData("sequence", string(BufferCache[i].seq));
+	sock.setFormData("serverPort", level.game.GetServerPort());
+	sock.setFormData("gameDateTime", gameDateTime);
+	sock.setFormData("sequence", BufferCache[i].seq);
+	sock.setFormData(SecretName, SecretValue); // add the secret
 	sock.setFormDataEx("stats", BufferCache[i].buffer);
 	sock.post(PostURL);
 }
 
 /** post was complete */
-function PostComplete()
+function PostComplete(HttpSock sender)
 {
 	if (sock.LastStatus == 200)
 	{
@@ -155,17 +179,17 @@ function PostComplete()
 		if (BufferCache.length > 0) SendBuffer(0);
 	}
 	else {
-		log("No valid response from the post url: "@sock.LastStatus@class'HttpUtil'.static.HTTPResponseCode(sock.LastStatus), name);
+		log("No valid response from the post url:"@sock.LastStatus@class'HttpUtil'.static.HTTPResponseCode(sock.LastStatus), name);
 	}
 }
 
-function PostTimeout()
+function PostTimeout(HttpSock sender)
 {
 	log("Timeout while trying to post data, will retry in"@fRetryDelay@"seconds", name);
 	SetTimer(fRetryDelay, false);
 }
 
-function PostConnectError()
+function PostConnectError(HttpSock sender)
 {
 	log("Error connecting to the server, will retry in"@fRetryDelay@"seconds", name);
 	SetTimer(fRetryDelay, false);
@@ -179,6 +203,8 @@ function Timer()
 
 defaultproperties
 {
-	BufferSize=512
+	BufferSize=2048
 	fRetryDelay=30
+	SecretName="secret"
+	SecretValue=""
 }

@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.21 2004/09/27 07:58:23 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.22 2004/10/01 10:10:14 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -260,7 +260,7 @@ function UpdateRSSFeeds()
 }
 
 /** process the updated RSS feed */
-function ProcessRSSUpdate()
+function ProcessRSSUpdate(HttpSock sender)
 {
 	if (htsock.LastStatus == 200)
 	{
@@ -275,7 +275,7 @@ function ProcessRSSUpdate()
 	UpdateRSSFeeds();
 }
 
-function RSSResolveFailed(string hostname)
+function RSSResolveFailed(HttpSock sender, string hostname)
 {
 	log("Error resolving RSS location host:"@hostname, name);
 	log("RSS Feed disabled", name);
@@ -286,7 +286,7 @@ function RSSResolveFailed(string hostname)
 	UpdateRSSFeeds();
 }
 
-function RSSConnectionTimeout()
+function RSSConnectionTimeout(HttpSock sender)
 {
 	log("RSS Feed update failed for"@Feeds[UpdatePos].rssHost@". Connection time out.");
 	// get next feed

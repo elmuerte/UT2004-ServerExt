@@ -5,18 +5,20 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: RemoteStats.uc,v 1.1 2004/09/28 08:12:37 elmuerte Exp $ -->
+	<!-- $Id: RemoteStats.uc,v 1.2 2004/10/01 10:10:14 elmuerte Exp $ -->
 *******************************************************************************/
 
 class RemoteStats extends MasterServerGameStats;
 
+/** The remote stats link class to use */
 var class<RStatsLink> RStatsLinkClass;
-var RStatsLink link;
+/** the link to the remote stats */
+var protected RStatsLink link;
 
 function Logf(string LogString)
 {
-	if (link != none) link.BufferLogf(LogString);
 	Super.Logf(LogString);
+	if (link != none) link.BufferLogf(LogString);
 }
 
 function Shutdown()
@@ -33,6 +35,7 @@ function EndGame(string Reason)
 
 function PreBeginPlay()
 {
+	super.PreBeginPlay();
 	link = spawn(RStatsLinkClass);
 }
 
