@@ -3,3 +3,7 @@ Lee Seats
 
 PoW
 - different actions for different words
+
+Reserved Slots
+- kick on rating:
+	take into account time played on a servrers
