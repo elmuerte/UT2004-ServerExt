@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: RSSWebQueryHandler.uc,v 1.1 2004/03/26 15:29:58 elmuerte Exp $ -->
+	<!-- $Id: RSSWebQueryHandler.uc,v 1.2 2004/03/27 23:13:19 elmuerte Exp $ -->
 *******************************************************************************/
 
 class RSSWebQueryHandler extends xWebQueryHandler;
@@ -46,7 +46,7 @@ function QueryFeeds(WebRequest Request, WebResponse Response)
 		fr.rssEnabled = Request.GetVariable("rssEnabled", "") ~= "true";
 		fr.rssHost = Request.GetVariable("rssHost", "");
 		fr.rssLocation = Request.GetVariable("rssLocation", "");
-		fr.rssUpdateInterval = max(1, int(Request.GetVariable("rssUpdateInterval", string(MutRSS.iDefUpdateInterval))));
+		fr.rssUpdateInterval = max(0, int(Request.GetVariable("rssUpdateInterval", string(MutRSS.iDefUpdateInterval))));
 		fr.Saveconfig();
 		MutRSS.Feeds[MutRSS.Feeds.length] = fr;
 		feedid = MutRSS.Feeds.length-1;
@@ -66,7 +66,7 @@ function QueryFeeds(WebRequest Request, WebResponse Response)
 		fr.rssEnabled = Request.GetVariable("rssEnabled", "") ~= "true";
 		fr.rssHost = Request.GetVariable("rssHost", "");
 		fr.rssLocation = Request.GetVariable("rssLocation", "");
-		fr.rssUpdateInterval = max(1, int(Request.GetVariable("rssUpdateInterval", string(MutRSS.iDefUpdateInterval))));
+		fr.rssUpdateInterval = max(0, int(Request.GetVariable("rssUpdateInterval", string(MutRSS.iDefUpdateInterval))));
 		fr.Saveconfig();
 	}
 	else if (Request.GetVariable("submit", "") ~= "delete")

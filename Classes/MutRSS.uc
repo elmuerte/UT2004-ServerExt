@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.11 2004/03/24 11:39:26 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.12 2004/03/27 23:13:19 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -17,21 +17,21 @@ var protected string SPACE_REPLACE;
 
 // Configuration options
 /** master enable switch */
-var(Config) config bool bEnabled;
+var(Config) globalconfig bool bEnabled;
 /** comma seperated list with feeds to use, leave blank to use all feeds */
-var(Config) config string sExlusiveFeeds;
+var(Config) globalconfig string sExlusiveFeeds;
 /** the client side GUI browser portal to spawn on: "mutate rss browser", after
 	spawning the Create event is called */
-var(Config) config string BrowserPortal;
+var(Config) globalconfig string BrowserPortal;
 /** The WebAdmin Query handler */
-var(Config) config string WebQueryHandler;
+var(Config) globalconfig string WebQueryHandler;
 
 /** should the RSS feed content be broadcasted */
-var(Broadcasting) config bool bBroadcastEnabled;
+var(Broadcasting) globalconfig bool bBroadcastEnabled;
 /** number of seconds between broadcasts */
-var(Broadcasting) config float fBroadcastDelay;
+var(Broadcasting) globalconfig float fBroadcastDelay;
 /** set this to true to start with a broadcast right away */
-var(Broadcasting) config bool bInitialBroadcast;
+var(Broadcasting) globalconfig bool bInitialBroadcast;
 /**
 	available broadcast methods:												<br />
 	BM_Linear:			display the lines in a row								<br />
@@ -47,15 +47,15 @@ enum EBroadcastMethods
 	BM_Sequential,
 };
 /** the broadcast method to use */
-var(Broadcasting) config EBroadcastMethods BroadcastMethod;
+var(Broadcasting) globalconfig EBroadcastMethods BroadcastMethod;
 /** Display this many "groups" per time, see iGroupSize for more information */
-var(Broadcasting) config int iBroadcastMessages;
+var(Broadcasting) globalconfig int iBroadcastMessages;
 /** Display groups of this size, iGroupSize=1 means only one line at the time,
 	a group size of n displays the the first min(n, length) entries starting
 	from the selected index. The total number of lines displayed is:
 	iBroadcastMessages * iGroupSize. When using BM_Linear you get the same result
 	for iBroadcastMessages=1 ; iGroupSize=2 and iBroadcastMessages=2 ; iGroupSize=1 */
-var(Broadcasting) config int iGroupSize;
+var(Broadcasting) globalconfig int iGroupSize;
 /**
 	format in wich the messages are broadcasted. The following replacements can
 	be used: 																	<br />
@@ -68,18 +68,18 @@ var(Broadcasting) config int iGroupSize;
 		%flink%			the link of the feed									<br />
 		%fdesc%			the description of the feed								<br />
 */
-var(Broadcasting) config string sBroadcastFormat;
+var(Broadcasting) globalconfig string sBroadcastFormat;
 
 
 /** if the mutator is interactive users can use the mutate command */
-var(Interaction) config bool bInteractive;
+var(Interaction) globalconfig bool bInteractive;
 /** if set to true the user can use 'rss browser' for a client side RSS browser */
-var(Interaction) config bool bBrowserEnabled;
+var(Interaction) globalconfig bool bBrowserEnabled;
 
 /** if automatic updating of the RSS feeds should happen should happen */
-var(Updating) config bool bUpdateEnabled;
+var(Updating) globalconfig bool bUpdateEnabled;
 /** default minutes between updates of the RSS feeds, keep this high, 45 minutes is nice */
-var(Updating) config int iDefUpdateInterval;
+var(Updating) globalconfig int iDefUpdateInterval;
 
 /** contains links to the feeds */
 var array<RSSFeedRecord> Feeds;
@@ -225,6 +225,7 @@ function UpdateRSSFeeds()
 	for (UpdatePos = UpdatePos; UpdatePos < Feeds.Length; UpdatePos++)
 	{
 		if (!Feeds[UpdatePos].rssEnabled) continue;
+		if (Feeds[UpdatePos].rssUpdateInterval <= 0) continue;
 		if (Feeds[UpdatePos].LastUpdate < htsock.now()-(Feeds[UpdatePos].rssUpdateInterval*60))
 		{
 			Feeds[UpdatePos].Update(htsock);
@@ -580,7 +581,24 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 
 	PlayInfo.AddSetting(default.FriendlyName, "bUpdateEnabled", 	default.piDesc[9],	128, 20, "CHECK");
 	PlayInfo.AddSetting(default.FriendlyName, "iDefUpdateInterval", default.piDesc[10],	128, 20, "TEXT", "5;1:99999");
+}
 
+static event string GetDescriptionText(string PropName)
+{
+	if (PropName ~= "bEnabled") return default.piDesc[0];
+	if (PropName ~= "sExlusiveFeeds") return default.piDesc[11];
+	if (PropName ~= "bBroadcastEnabled") return default.piDesc[1];
+	if (PropName ~= "fBroadcastDelay") return default.piDesc[2];
+	if (PropName ~= "bInitialBroadcast") return default.piDesc[3];
+	if (PropName ~= "BroadcastMethod") return default.piDesc[4];
+	if (PropName ~= "iBroadcastMessages") return default.piDesc[5];
+	if (PropName ~= "iGroupSize") return default.piDesc[6];
+	if (PropName ~= "sBroadcastFormat") return default.piDesc[7];
+	if (PropName ~= "bInteractive") return default.piDesc[8];
+	if (PropName ~= "bBrowserEnabled") return default.piDesc[12];
+	if (PropName ~= "bUpdateEnabled") return default.piDesc[9];
+	if (PropName ~= "iDefUpdateInterval") return default.piDesc[10];
+	return Super.GetDescriptionText(PropName);
 }
 
 function GetServerDetails( out GameInfo.ServerResponseLine ServerState )

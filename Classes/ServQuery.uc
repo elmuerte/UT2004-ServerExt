@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ServQuery.uc,v 1.1 2004/03/27 15:45:03 elmuerte Exp $ -->
+	<!-- $Id: ServQuery.uc,v 1.2 2004/03/27 23:13:19 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ServQuery extends UdpGameSpyQuery;
@@ -23,14 +23,14 @@ var config int iTimeframe;
 var config enum EProtectionType
 {
 	PT_None,
-	PT_PerSecond,
-	PT_HostPerSecond,
+	PT_PerFrame,
+	PT_HostPerFrame,
 	PT_Max,
 } ePType;
 /** for PT_PerSecon */
-var config int iMaxQueryPerSecond; // type 1
+var config int iMaxQueryPerFrame;
 /** for PT_HostPerSecond */
-var config int iMaxQueryPerHostPerSecond; // type 2
+var config int iMaxQueryPerHostPerFrame;
 /** the password for to get the player hashes */
 var config string sPassword;
 
@@ -69,19 +69,19 @@ function int getHostDelay(IpAddr Addr)
 event ReceivedText( IpAddr Addr, string Text )
 {
 	iCurrentCount++;
-	if ((ePType == PT_PerSecond) || (ePType == PT_Max))
+	if ((ePType == PT_PerFrame) || (ePType == PT_Max))
 	{
-		if (iCurrentCount > iMaxQueryPerSecond)
+		if (iCurrentCount > iMaxQueryPerFrame)
 		{
-			if (bVerbose) Log("Query from"@IpAddrToString(addr)@"rejected (iMaxQueryPerSecond)", name);
+			if (bVerbose) Log("Query from"@IpAddrToString(addr)@"rejected (iMaxQueryPerFrame)", name);
 			return;
 		}
 	}
-	if ((ePType == PT_HostPerSecond) || (ePType == PT_Max))
+	if ((ePType == PT_HostPerFrame) || (ePType == PT_Max))
 	{
-		if (getHostDelay(addr) > iMaxQueryPerHostPerSecond)
+		if (getHostDelay(addr) > iMaxQueryPerHostPerFrame)
 		{
-			if (bVerbose) Log("Query from"@IpAddrToString(addr)@"rejected (iMaxQueryPerHostPerSecond)", name);
+			if (bVerbose) Log("Query from"@IpAddrToString(addr)@"rejected (iMaxQueryPerHostPerFramed)", name);
 			return;
 		}
 	}
@@ -93,7 +93,7 @@ event Timer()
 	if (iCurrentCount > iHighestRequestCount)
 	{
 		iHighestRequestCount = iCurrentCount;
-		log("Highest Request Count Per Timeframe ("$iTimeframe@"sec):"@iHighestRequestCount, name);
+		if (bVerbose) log("Highest Request Count Per Timeframe ("$iTimeframe@"sec):"@iHighestRequestCount, name);
 	}
 	iCurrentCount=0; // clear count every second;
 	HostRecords.Length = 0;
@@ -428,10 +428,10 @@ function bool replayToQuery(string type)
 
 defaultproperties
 {
-	sReplyTo="TASGMEBH";
+	sReplyTo="TASGMEBH"
 	bVerbose=false
 	iTimeframe=60
 	ePType=PT_None
-	iMaxQueryPerSecond=180
-	iMaxQueryPerHostPerSecond=10
+	iMaxQueryPerFrame=180
+	iMaxQueryPerHostPerFrame=10
 }
