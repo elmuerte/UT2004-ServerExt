@@ -165,7 +165,7 @@ sFileFormat="ChatFilter_%P_%Y_%M_%D_%H_%I_%S"
 </pre>
 <dl>
 	<dt>bFriendlyMessage</td>
-	<dd>Display a friendly message window when a player gets removed from the server. When you enable this feature you must add ChatFilterMsg to the ServerPackages list.</dd>
+	<dd>Display a friendly message window when a player gets removed from the server.</dd>
 	<dt>fTimeFrame</td>
 	<dd>Set the number of seconds of a single time frame</dd>
 	<dt>iMaxPerTimeFrame</td>
@@ -201,7 +201,7 @@ sFileFormat="ChatFilter_%P_%Y_%M_%D_%H_%I_%S"
 	<dt>bShowMuted</dt>
 	<dd>Update the HUD to show when a player has been muted</dd>
 	<dt>bCheckNicknames</td>
-	<dd>Check the players nick name for BadWords. When you enable this feature you must add ChatFilterMsg to the ServerPackages list.</dd>
+	<dd>Check the players nick name for BadWords.</dd>
 	<dt>BadnickAction</dt>
 	<dd>Action to take on a bad nick name	
 		<ul>
@@ -437,12 +437,7 @@ If you want to install it as a Server Actor add <code>ServerExt.MutRSS</code> to
 [Engine.GameEngine]
 ServerActors=ServerExt.MutRSS
 </pre>
-This mutator features a client side RSS Feed browser (only when installed as a mutator). If you want this function to be available you have to add the <code>ServerExtClient.u</code> and the <code>LibHTTP2.u</code> files to the ServerPackages list:
-<pre>
-[Engine.GameEngine]
-ServerPackage=ServerExtClient
-ServerPackage=LibHTTP2
-</pre>
+This mutator features a client side RSS Feed browser (only when installed as a mutator).
 
 <h2>Configuration</h2>
 <h3>Mutator configuration</h3>

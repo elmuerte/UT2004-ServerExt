@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.13 2004/05/05 10:02:27 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.14 2004/05/05 20:54:13 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -112,7 +112,11 @@ event PreBeginPlay()
 	}
 	InitRSS();
 	LoadWebAdmin();
-	if (bBrowserEnabled && (int(Level.EngineVersion) > 3195)) AddToPackageMap(ClientSidePackage);
+	if (bBrowserEnabled && (int(Level.EngineVersion) > 3195))
+	{
+		AddToPackageMap(ClientSidePackage);
+		AddToPackageMap(LibHTTPPackage);
+	}
 }
 
 event PostBeginPlay()
