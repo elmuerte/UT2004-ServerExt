@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.17 2004/05/10 22:10:39 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.18 2004/05/11 08:04:35 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -15,16 +15,18 @@ class MutRSS extends Mutator config;
 
 const VERSION = 102;
 /** character to replace the spaces in the config names with */
-var protected string SPACE_REPLACE;
+var string SPACE_REPLACE;
 
 // Configuration options
 /** master enable switch */
 var(Config) globalconfig bool bEnabled;
+/** announce to the masterserver and clients that we are running this mutator */
+var(Config) globalconfig bool bAnnounce;
 /** comma seperated list with feeds to use, leave blank to use all feeds */
 var(Config) globalconfig string sExlusiveFeeds;
 /** the client side GUI browser portal to spawn on: "mutate rss browser", after
 	spawning the Create event is called */
-var(Config) globalconfig string BrowserPortal;
+var(Config) globalconfig string BrowserPortal, BrowserMenu;
 /** The WebAdmin Query handler */
 var(Config) globalconfig string WebQueryHandler;
 
@@ -105,7 +107,7 @@ var localized string msgAdded, msgDupName, msgDupLoc, msgRemoved, msgDisabledFee
 	msgEnabledFeed, msgUpdateFeed, msgDisabledMut, msgEnabledMut, msgEmpty,
 	msgDisabled, msgList, msgMutDisabled, msgListEntry, msgShowEntry, msgShow;
 /** Play Info descriptions */
-var localized string piDesc[14];
+var localized string piDesc[15],piHelp[15];
 var localized string piOpt[2];
 var localized string msgHelp[5], msgAdminHelp[7];
 
@@ -475,9 +477,9 @@ function Mutate(string MutateString, PlayerController Sender)
 	}
 }
 
+/** return true if a player is an admin */
 function bool isAdmin(PlayerController sender)
 {
-	Log(Level.NetMode@NM_Standalone);
 	if (Level.NetMode == NM_Standalone) return true;
 	return sender.PlayerReplicationInfo.bAdmin;
 }
@@ -490,7 +492,7 @@ function SummonPortal(PlayerController sender)
 	portalclass = class<RSSBrowserPortal>(DynamicLoadObject(repl(BrowserPortal, "%clientpackage%", ClientSidePackage), class'Class', false));
 	if (portalclass == none) return;
 	portal = spawn(portalclass, Sender);
-	portal.BrowserMenu = repl(BrowserPortal, "%clientpackage%", ClientSidePackage);
+	portal.BrowserMenu = repl(BrowserMenu, "%clientpackage%", ClientSidePackage);
 	portal.Created();
 }
 
@@ -534,7 +536,12 @@ function Timer()
 			if (BroadcastMethod != BM_Sequential) nOffset++;
 		}
 		// or else we would skip the first feed
-		if (BroadcastMethod == BM_Sequential) nFeed = getNextFeed(nFeed);
+		if (BroadcastMethod == BM_Sequential)
+		{
+			j = getNextFeed(nFeed);
+			if (nFeed == j) nOffset++;
+			else nFeed = j;
+		}
 	}
 
 	if (BroadcastMethod == BM_Sequential)
@@ -578,10 +585,10 @@ function bool sendBroadcastMessage(int sFeed, int sOffset)
 /** translates a color to a string code */
 static function string ColorCode(color in)
 {
-	return Chr(27)$Chr(in.R)$Chr(in.G)$Chr(in.B);
+	return Chr(27)$Chr(max(in.R,1))$Chr(max(in.G,1))$Chr(max(in.B,1));
 }
 
-/** */
+/** fix a bug for escaped double qoutes in dynamic struct arrays */
 static function string UnescapeQuotes(string in)
 {
 	return repl(in, "\\\"", "\"");
@@ -591,6 +598,7 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 {
 	Super.FillPlayInfo(PlayInfo);
 	PlayInfo.AddSetting(default.FriendlyName, "bEnabled", 			default.piDesc[0],	128, 1, "CHECK");
+	PlayInfo.AddSetting(default.FriendlyName, "bAnnounce", 			default.piDesc[14],	128, 1, "CHECK");
 	PlayInfo.AddSetting(default.FriendlyName, "sExlusiveFeeds",		default.piDesc[11],	128, 1, "TEXT", "50;");
 
 	PlayInfo.AddSetting(default.FriendlyName, "bBroadcastEnabled", 	default.piDesc[1],	107, 10, "CHECK");
@@ -612,20 +620,21 @@ static function FillPlayInfo(PlayInfo PlayInfo)
 
 static event string GetDescriptionText(string PropName)
 {
-	if (PropName ~= "bEnabled") return default.piDesc[0];
-	if (PropName ~= "sExlusiveFeeds") return default.piDesc[11];
-	if (PropName ~= "bBroadcastEnabled") return default.piDesc[1];
-	if (PropName ~= "fBroadcastDelay") return default.piDesc[2];
-	if (PropName ~= "bInitialBroadcast") return default.piDesc[3];
-	if (PropName ~= "BroadcastMethod") return default.piDesc[4];
-	if (PropName ~= "iBroadcastMessages") return default.piDesc[5];
-	if (PropName ~= "iGroupSize") return default.piDesc[6];
-	if (PropName ~= "sBroadcastFormat") return default.piDesc[7];
-	if (PropName ~= "bInteractive") return default.piDesc[8];
-	if (PropName ~= "bBrowserEnabled") return default.piDesc[12];
-	if (PropName ~= "bUpdateEnabled") return default.piDesc[9];
-	if (PropName ~= "iDefUpdateInterval") return default.piDesc[10];
-	if (PropName ~= "RSSFeedRecordClassName") return default.piDesc[13];
+	if (PropName ~= "bEnabled") return default.piHelp[0];
+	if (PropName ~= "bAnnounce") return default.piHelp[14];
+	if (PropName ~= "sExlusiveFeeds") return default.piHelp[11];
+	if (PropName ~= "bBroadcastEnabled") return default.piHelp[1];
+	if (PropName ~= "fBroadcastDelay") return default.piHelp[2];
+	if (PropName ~= "bInitialBroadcast") return default.piHelp[3];
+	if (PropName ~= "BroadcastMethod") return default.piHelp[4];
+	if (PropName ~= "iBroadcastMessages") return default.piHelp[5];
+	if (PropName ~= "iGroupSize") return default.piHelp[6];
+	if (PropName ~= "sBroadcastFormat") return default.piHelp[7];
+	if (PropName ~= "bInteractive") return default.piHelp[8];
+	if (PropName ~= "bBrowserEnabled") return default.piHelp[12];
+	if (PropName ~= "bUpdateEnabled") return default.piHelp[9];
+	if (PropName ~= "iDefUpdateInterval") return default.piHelp[10];
+	if (PropName ~= "RSSFeedRecordClassName") return default.piHelp[13];
 	return Super.GetDescriptionText(PropName);
 }
 
@@ -633,7 +642,7 @@ function GetServerDetails( out GameInfo.ServerResponseLine ServerState )
 {
 	local int i;
 	local string tmp;
-	super.GetServerDetails(ServerState);
+	if (bAnnounce) super.GetServerDetails(ServerState);
 	ServerState.ServerInfo.Length = ServerState.ServerInfo.Length+1;
 	ServerState.ServerInfo[ServerState.ServerInfo.Length-1].Key = "RSS Feeds";
 	for (i = 0; i < Feeds.Length; i++)
@@ -652,6 +661,7 @@ defaultproperties
 	GroupName="RSS"
 
 	bEnabled=true
+	bAnnounce=True;
 	bBroadcastEnabled=true
 	fBroadcastDelay=60
 	bInitialBroadcast=false
@@ -664,6 +674,7 @@ defaultproperties
 	bUpdateEnabled=true
 	iDefUpdateInterval=45
 	BrowserPortal="%clientpackage%.RSSBrowserPortal"
+	BrowserMenu="%clientpackage%.MutRSSBrowser"
 	WebQueryHandler="ServerExt.RSSWebQueryHandler"
 	RSSFeedRecordClassName="%clientpackage%.RSSFeedRecord"
 
@@ -686,19 +697,35 @@ defaultproperties
 
 	piOpt[0]="BM_Linear;Linear;BM_Random;Random;BM_RandomFeed;Random Feed;BM_Sequential;Sequential"
 	piDesc[0]="Global enable switch"
+	piHelp[0]="This is the master switch, when set to false the mutator doesn't do anything"
 	piDesc[1]="Broadcast enabled"
+	piHelp[1]="Broadcast the feed content at a set interval. Turn this off when you don't want this spam"
 	piDesc[2]="Broadcast delay"
+	piHelp[2]="Seconds between broadcasts"
 	piDesc[3]="Initial broadcast"
+	piHelp[3]="Usualy the first broadcast is done after the initial delay has passed. When this is set to true the first broadcast will be done right after the mutator started"
 	piDesc[4]="Broadcast method"
+	piHelp[4]="The broadcast method to use. This will control in what order the messages are selected."
 	piDesc[5]="Number of messages"
+	piHelp[5]="Number of message groups to send per broadcast"
 	piDesc[6]="Message group size"
+	piHelp[6]="The size of a message group"
 	piDesc[7]="Broadcast format"
+	piHelp[7]="The way the message is constructed"
 	piDesc[8]="Interactive"
+	piHelp[8]="Is the mutator interactive, e.g. can people use the 'mutate rss' command"
 	piDesc[9]="Updating enabled"
+	piHelp[9]="Enable updating of the feeds. If you only have offline feeds set this to false to reduce some overhead."
 	piDesc[10]="Default update time"
+	piHelp[10]="Default update time for new feeds"
 	piDesc[11]="Exlcusive feeds"
+	piHelp[11]="Only use these feeds from all available feeds. This will override the enabled setting of each feed (when enabled). This is a comma delimited line of feed names."
 	piDesc[12]="Client side browser"
+	piHelp[12]="Enable the client side feed browser. Warning: this will increase the server bandwidth, all feed data is send to the client on request."
 	piDesc[13]="RSS Feed Storage Record"
+	piHelp[13]="The feed storage class, this is an advanced setting to use a different feed class it should only be changed if you know what you are doing."
+	piDesc[14]="Announce"
+	piHelp[14]="Announce to the masterserver and clients that we are running this mutator"
 
 	msgHelp[0]="RSS Feed Mutator Help:"
 	msgHelp[1]="mutate rss browser            show client side browser"

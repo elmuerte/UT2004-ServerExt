@@ -106,6 +106,9 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 <h3>Changes since v102</h3>
 <ul>
 	<li>The RSS Feed configuration can now also be saved in an other config file than the RSS.ini. This has been added for GISPs, if you do not host multiple servers from the same location with different admins, then you should not use this feature.</li>
+	<li>Fixed "sequential" feed order with only one available feed</li>
+	<li>Fixed the client side browser</li>
+	<li>Added a new config option to MutRSS: bAnnounce<br />This will controll announcing this mutator to the master server</li>
 </ul>
 
 <h3>Changes since v101</h3>
@@ -128,6 +131,7 @@ Copy the following files to the System directory of your UT2004 servers:
 	<li>ServerExt.u</li>
 	<li>ServerExt.ucl</li>
 	<li>ServerExtClient103.u</li>
+	<li>ServerExtClient103.int</li>
 </ul>
 Remove the old ServerExtClient.u, ServerExtClient101.u file from you system and configuration.
 
@@ -461,6 +465,7 @@ Most of the configuration can also be set via the WebAdmin: defaults -> RSS Feed
 <pre>
 [ServerExt.MutRSS]
 bEnabled=true
+bAnnounce=true
 sExlusiveFeeds=
 bBroadcastEnabled=true
 fBroadcastDelay=60
@@ -478,6 +483,9 @@ iDefUpdateInterval=45
 <dl>
 	<dt>bEnabled</dt>
 	<dd>Global switch to enable/disable the mutator</dd>
+
+	<dt>bAnnounce</dt>
+	<dd>announce to the masterserver and clients that we are running this mutator</dd>
 
 	<dt>sExlusiveFeeds</dt>
 	<dd>Comma seperated list of RSS Feed names to use, leave blank to use all enabled RSS feeds</dd>
