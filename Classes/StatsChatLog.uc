@@ -7,7 +7,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: StatsChatLog.uc,v 1.2 2004/03/17 00:17:26 elmuerte Exp $ -->
+	<!-- $Id: StatsChatLog.uc,v 1.3 2004/04/19 06:27:55 elmuerte Exp $ -->
 *******************************************************************************/
 
 class StatsChatLog extends BroadcastHandler;
@@ -34,15 +34,15 @@ function PreBeginPlay()
 	else Log("Error registering broadcast handler", name);
 }
 
-function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationInfo SenderPRI, out string Msg, optional name Type )
+function BroadcastText( PlayerReplicationInfo SenderPRI, PlayerController Receiver, coerce string Msg, optional name Type )
 {
 	local string ctype;
-	if ((statslog != none) && (statslog.TempLog != none))
+	if ((statslog != none) && (statslog.TempLog != none) && (Receiver.PlayerReplicationInfo == SenderPRI))
 	{
 		if (Type == 'say') ctype = "V";
 		else if (Type == 'teamsay') ctype = "TV";
 		if (ctype != "") statslog.TempLog.Logf(statslog.Header()$ctype$Chr(9)$SenderPRI.PlayerID$Chr(9)$Msg);
 	}
-	return super.AcceptBroadcastText(Receiver, SenderPRI, Msg, Type);
+	super.BroadcastText(SenderPRI, Receiver, Msg, Type);
 }
 
