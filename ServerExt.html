@@ -1,6 +1,7 @@
 <h1>ServerExt</h1>
 ServerExt is a package containing extentions for UT2004 servers. It consist out of a couple of independed components:
 <ul>
+	<li><a href="#chatfilter">Chat Filter</a></li>
 	<li><a href="#playerjoinlog">Player join log</a></li>
 	<li><a href="#servquery">ServQuery</a></li>
 	<li><a href="#statschatlog">Stats chat log</a></li>	
@@ -113,9 +114,149 @@ Copy the following files to the System directory of your UT2004 servers:
 	<li>ServerExt.int</li>
 	<li>ServerExt.u</li>
 	<li>ServerExt.ucl</li>
-	<li>ServerExtClient.u</li>
+	<li>ServerExtClient101.u</li>
 </ul>
+Remove the old ServerExtClient.u file from you system and configuration.
 
+<hr />
+<a name="chatfilter"></a><h1>Chat Filter</h1>
+ChatFilter is a server add-on to clean up the chatting on a server. ChatFilter has the power to reduce spamming on a server, it can also filter bad words from the line. On bad behavior the player will get a score assigned on a defined level actions can taken against the player. It's pretty much the same as ChatFilter for UT2003.
+
+<h2>Installation</h2>
+Add <code>ServerExt.ChatFilter</code> to the Server Actors list in your system configuration
+<pre>
+[Engine.GameEngine]
+ServerActors=ServerExt.ChatFilter
+</pre>
+
+<h2>Configuration</h2>
+<h3>UT2004.ini</h3>
+The configuration of the behavior of ChatFilter resides in the server configuration file (UT2003.ini). Add the following lines to the file:
+<pre>
+[ServerExt.ChatFilter]
+bFriendlyMessage=false
+fTimeFrame=1.0000
+iMaxPerTimeFrame=2
+iMaxRepeat=1
+iScoreSpam=1
+CencorWord=*****
+iScoreSwear=1
+iKillScore=10
+KillAction=CFA_Nothing
+BadWords=asshole
+BadWords=fuck
+...
+bShowMuted=false
+bUseReplacementTable=false
+bCheckNicknames=false
+BadnickAction=BNA_Kick
+UnallowedNicks=Player
+UnallowedNicks=Admin
+...
+bWildCardNicks=true
+sWarningNotification="ChatFilter: Please clean up your act"
+sWarningBroadcast="%s is chatting abusive, type 'mutate cf judge %i` to judge the player"
+WarningAction=CFA_Kick
+iMaxWarnings=2
+fMinVote=0.5000
+sMuteMessage="ChatFilter: You are muted the rest of the game"
+bLogChat=false
+sFileFormat="ChatFilter_%P_%Y_%M_%D_%H_%I_%S"
+</pre>
+<dl>
+	<dt>bFriendlyMessage</td>
+	<dd>Display a friendly message window when a player gets removed from the server. When you enable this feature you must add ChatFilterMsg to the ServerPackages list.</dd>
+	<dt>fTimeFrame</td>
+	<dd>Set the number of seconds of a single time frame</dd>
+	<dt>iMaxPerTimeFrame</td>
+	<dd>Maximum number of lines allowed per time frame</dd>
+	<dt>iMaxRepeat</td>
+	<dd>The maximum times a player can say the same line in a row</dd>
+	<dt>iScoreSpam</td>
+	<dd>The score to add when a player exceeds the iMaxRepeat value</dd>
+	<dt>CencorWord</td>
+	<dd>Text to replace BadWords with</dd>
+	<dt>iScoreSwear</td>
+	<dd>The score to add for every bad word</dd>
+	<dt>iKillScore</td>
+	<dd>The maximum score a player may have before actions will be taken</dd>
+	<dt>KillAction</td>
+	<dd>Action to take against the player:
+		<ul>
+		  <li> CFA_Nothing do nothing</li>
+		  <li> CFA_Kick kick the player</li>
+		  <li> CFA_Ban ban the player</li>
+		  <li> CFA_SessionBan ban the player for this game</li>
+		  <li> CFA_Defrag remove one point of the players score</li>
+		  <li> CFA_Warn the player will be warned</li>
+		  <li> CFA_Mute the player will be muted for the rest of the game </li>
+		  </ul>
+	</dd>
+	<dt>BadWords</td>
+	<dd>Words that are considderd bad/swearing. By default no words are added</dd>
+	<dt>bUseReplacementTable</td>
+	<dd>Uses the a per badword replacement, BadWords have to be divided with a ; to change the replacement, or the default if omitted. For example:<br />
+	  BadWords=shit;sh*t<br />
+	  BadWords=hate;love</dd>
+	<dt>bShowMuted</dt>
+	<dd>Update the HUD to show when a player has been muted</dd>
+	<dt>bCheckNicknames</td>
+	<dd>Check the players nick name for BadWords. When you enable this feature you must add ChatFilterMsg to the ServerPackages list.</dd>
+	<dt>BadnickAction</dt>
+	<dd>Action to take on a bad nick name	
+		<ul>
+		  <li> BNA_Kick kick the player</li>
+		  <li> BNA_Request request a nick change, don't kick</li>
+		  <li> BNA_Ban ban the player</li>
+		  <li> BNA_SessionBan ban the player for this game</li>
+		  </ul>	
+	</dd>
+	<dt>bWildCardNicks</dt>
+	<dd>Accept wildcards in the bad nick name list</dd>
+	<dt>UnallowedNicks</dt>
+	<dd>List with nick names that are never allowed for players</dd>
+	<dt>sWarningNotification</td>
+	<dd>The message a player will get when he gets warned</dd>
+	<dt>sWarningBroadcast</td>
+	<dd>The message all players get when somebody get's warned. "%s" is replaced by the player name, and "%i" is replaced by the filter record contain information about this user, required for the `mutate cf judge` command</dd>
+	<dt>WarningAction</td>
+	<dd>The action to take when a player get's voted off or exceeds the maximum warnings. You can choose from the same actions as KillAction, except CFA_Warn ofcourse</dd>
+	<dt>iMaxWarnings</td>
+	<dd>The maximum number of warnings before the server automatically takes action</dd>
+	<dt>fMinVote</td>
+	<dd>The minimum percentage of players on the server that have to vote before actions are taken against the warned player</dd>
+	<dt>sMuteMessage</td>
+	<dd>The message a player get's when he's muted for the rest of the game</dd>
+	<dt>bLogChat</td>
+	<dd>Save the chat to a log file</dd>
+	<dt>sFileFormat</td>
+	<dd>The format for the log filename. You can use the following replacements:
+	<ul>
+		  <li> %P server Port</li>
+		  <li> %Y current Year</li>
+		  <li> %M current Month</li>
+		  <li> %Y current Day</li>
+		  <li> %H current Hour</li>
+		  <li> %I current mInute</li>
+		  <li> %S current Second</li>
+		  <li> %N server Name </li>
+	</ul>
+	  Not all characters are supported in the filename, for example '.', these will be translated to an underscore '_' </dd>
+</dl>
+
+The log file generated will start with a line with the date the log started:
+
+  --- Log started on 2003/2/28 21:17:40
+
+After that you will get the log files in there field (seperated by tabs)
+
+  time  tag  playername  message
+
+Tag is one of the following:
+
+  CHAT, TEAMCHAT, SPAM, TEAMSPAM, MUTE, TEAMMUTE
+
+The lines are uncensored (the bad words are not filtered)
 
 <hr />
 <a name="playerjoinlog"></a><h1>Player Join Log</h1>

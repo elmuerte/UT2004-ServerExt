@@ -5,7 +5,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: ChatFilter.uc,v 1.1 2004/05/05 10:02:27 elmuerte Exp $ -->
+	<!-- $Id: ChatFilter.uc,v 1.2 2004/05/05 20:51:29 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -151,6 +151,8 @@ var string WarningMutClass;
 var class<CFMsgDispatcher> MessageDispatcherClass;
 
 var float LastMsgTick;
+
+var localized string PICat, PIlabel[22], PIdesc[22];
 
 /** Find a player record and create a new one when needed */
 function int findChatRecord(Actor Sender, optional bool bCreate)
@@ -613,37 +615,67 @@ function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationI
 static function FillPlayInfo(PlayInfo PI)
 {
 	Super.FillPlayInfo(PI);
-	PI.AddSetting("Chat Filter", "bFriendlyMessage", "Friendly messages", 10, 0, "check");
+	PI.AddSetting(default.PICat, "bFriendlyMessage", default.PIlabel[0], 10, 0, "check");
 
-	PI.AddSetting("Chat Filter", "fTimeFrame", "Time frame", 10, 1, "Text", "5");
-	PI.AddSetting("Chat Filter", "iMaxPerTimeFrame", "Max per time frame", 10, 2, "Text", "5");
-	PI.AddSetting("Chat Filter", "iMaxRepeat", "Max repeats", 10, 3, "Text", "5");
-	PI.AddSetting("Chat Filter", "iScoreSpam", "Spam score", 10, 4, "Text", "5");
+	PI.AddSetting(default.PICat, "fTimeFrame", default.PIlabel[1], 10, 1, "Text", "5");
+	PI.AddSetting(default.PICat, "iMaxPerTimeFrame", default.PIlabel[2], 10, 2, "Text", "5");
+	PI.AddSetting(default.PICat, "iMaxRepeat", default.PIlabel[3], 10, 3, "Text", "5");
+	PI.AddSetting(default.PICat, "iScoreSpam", default.PIlabel[4], 10, 4, "Text", "5");
 
-	PI.AddSetting("Chat Filter", "CencorWord", "Censor replacement", 10, 5, "Text", "20");
-	PI.AddSetting("Chat Filter", "iScoreSwear", "Swear score", 10, 6, "Text", "5");
-	//PI.AddSetting("Chat Filter", "BadWords", "Bad words", 10, 7, "Textarea", "");
+	PI.AddSetting(default.PICat, "CencorWord", default.PIlabel[5], 10, 5, "Text", "20");
+	PI.AddSetting(default.PICat, "iScoreSwear", default.PIlabel[6], 10, 6, "Text", "5");
+	//PI.AddSetting(default.PICat, "BadWords", default.PIlabel[7], 10, 7, "Textarea", "");
 
-	PI.AddSetting("Chat Filter", "iKillScore", "Kill score", 10, 8, "Text", "5");
-	PI.AddSetting("Chat Filter", "KillAction", "Kill action", 10, 9, "Select", "CFA_Nothing;Nothing;CFA_Warn;Warn player;CFA_Kick;Kick player;CFA_Ban;Ban player;CFA_SessionBan;Ban player this session;CFA_Defrag;Remove one point;CFA_Mute;Mute player for this game");
+	PI.AddSetting(default.PICat, "iKillScore", default.PIlabel[8], 10, 8, "Text", "5");
+	PI.AddSetting(default.PICat, "KillAction", default.PIlabel[9], 10, 9, "Select", "CFA_Nothing;Nothing;CFA_Warn;Warn player;CFA_Kick;Kick player;CFA_Ban;Ban player;CFA_SessionBan;Ban player this session;CFA_Defrag;Remove one point;CFA_Mute;Mute player for this game");
 
-	PI.AddSetting("Chat Filter", "bCheckNicknames", "Check nicknames", 10, 10, "check", "");
-	PI.AddSetting("Chat Filter", "BadnickAction", "Bad nick action", 10, 10, "Select", "BNA_Kick;Kick the player;BNA_Request;Request a new nickname;BNA_Ban;Ban the player;BNA_SessionBan;Ban this player for this session only");
-	PI.AddSetting("Chat Filter", "bWildCardNicks", "Bad nicks contain wildcards", 10, 10, "check", "");
+	PI.AddSetting(default.PICat, "bCheckNicknames", default.PIlabel[10], 10, 10, "check", "");
+	PI.AddSetting(default.PICat, "BadnickAction", default.PIlabel[11], 10, 10, "Select", "BNA_Kick;Kick the player;BNA_Request;Request a new nickname;BNA_Ban;Ban the player;BNA_SessionBan;Ban this player for this session only");
+	PI.AddSetting(default.PICat, "bWildCardNicks", default.PIlabel[12], 10, 10, "check", "");
 
-	PI.AddSetting("Chat Filter", "sWarningNotification", "Warning notification", 10, 11, "Text");
-	PI.AddSetting("Chat Filter", "sWarningBroadcast", "Warning broadcast", 10, 12, "Text");
-	PI.AddSetting("Chat Filter", "WarningAction", "Warning action", 10, 13, "Select", "CFA_Nothing;Nothing;CFA_Kick;Kick player;CFA_Ban;Ban player;CFA_SessionBan;Ban player this session;CFA_Defrag;Remove one point;CFA_Mute;Mute player for this game");
-	PI.AddSetting("Chat Filter", "iMaxWarnings", "Max warnings", 10, 14, "Text", "5");
-	PI.AddSetting("Chat Filter", "fMinVote", "Min vote percentage", 10, 15, "Text", "5;0:1");
+	PI.AddSetting(default.PICat, "sWarningNotification", default.PIlabel[13], 10, 11, "Text");
+	PI.AddSetting(default.PICat, "sWarningBroadcast", default.PIlabel[14], 10, 12, "Text");
+	PI.AddSetting(default.PICat, "WarningAction", default.PIlabel[15], 10, 13, "Select", "CFA_Nothing;Nothing;CFA_Kick;Kick player;CFA_Ban;Ban player;CFA_SessionBan;Ban player this session;CFA_Defrag;Remove one point;CFA_Mute;Mute player for this game");
+	PI.AddSetting(default.PICat, "iMaxWarnings", default.PIlabel[16], 10, 14, "Text", "5");
+	PI.AddSetting(default.PICat, "fMinVote", default.PIlabel[17], 10, 15, "Text", "5;0:1");
 
-	PI.AddSetting("Chat Filter", "sMuteMessage", "Mute message", 10, 16, "Text");
-	PI.AddSetting("Chat Filter", "bShowMuted", "Show muted", 10, 17, "Text");
+	PI.AddSetting(default.PICat, "sMuteMessage", default.PIlabel[18], 10, 16, "Text");
+	PI.AddSetting(default.PICat, "bShowMuted", default.PIlabel[19], 10, 17, "Text");
 
 	//CD_All;Public;CD_PrivateSpecator;Spectators are private;CD_PrivatePlayer;Specators and Players are private;
 
-	PI.AddSetting("Chat Filter", "bLogChat", "Log chat", 10, 17, "check");
-	PI.AddSetting("Chat Filter", "sFileFormat", "Filename format", 10, 18, "Text", "40");
+	PI.AddSetting(default.PICat, "bLogChat", default.PIlabel[20], 10, 17, "check");
+	PI.AddSetting(default.PICat, "sFileFormat", default.PIlabel[21], 10, 18, "Text", "40");
+}
+
+static event string GetDescriptionText(string PropName)
+{
+	switch (PropName)
+	{
+		case "bFriendlyMessage": return default.PIdesc[0];
+		case "fTimeFrame": return default.PIdesc[1];
+		case "iMaxPerTimeFrame": return default.PIdesc[2];
+		case "iMaxRepeat": return default.PIdesc[3];
+		case "iScoreSpam": return default.PIdesc[4];
+		case "CencorWord": return default.PIdesc[5];
+		case "iScoreSwear": return default.PIdesc[6];
+		case "BadWords": return default.PIdesc[7];
+		case "iKillScore": return default.PIdesc[8];
+		case "KillAction": return default.PIdesc[9];
+		case "bCheckNicknames": return default.PIdesc[10];
+		case "BadnickAction": return default.PIdesc[11];
+		case "bWildCardNicks": return default.PIdesc[12];
+		case "sWarningNotification": return default.PIdesc[13];
+		case "sWarningBroadcast": return default.PIdesc[14];
+		case "WarningAction": return default.PIdesc[15];
+		case "iMaxWarnings": return default.PIdesc[16];
+		case "fMinVote": return default.PIdesc[17];
+		case "sMuteMessage": return default.PIdesc[18];
+		case "bShowMuted": return default.PIdesc[19];
+		case "bLogChat": return default.PIdesc[20];
+		case "sFileFormat": return default.PIdesc[21];
+	}
+	return "";
 }
 
 function string GetServerPort()
@@ -701,4 +733,50 @@ defaultproperties
 	sFileFormat="ChatFilter_%P_%Y_%M_%D_%H_%I_%S"
 
 	WarningMutClass="ServerExt.CFWarningMut"
+
+	PICat="Chat Filter"
+	PIlabel[0]="Friendly messages"
+	PIdesc[0]="Show a friendly message when the user is kicked from the server"
+	PIlabel[1]="Time frame"
+	PIdesc[1]="Time frame size in which some filters apply"
+	PIlabel[2]="Max per time frame"
+	PIdesc[2]="Maximum message per time frame"
+	PIlabel[3]="Max repeats"
+	PIdesc[3]="Maximum number of repeating lines allowed"
+	PIlabel[4]="Spam score"
+	PIdesc[4]="Score to add when spamming"
+	PIlabel[5]="Censor replacement"
+	PIdesc[5]="Replacement word for the bad words"
+	PIlabel[6]="Swear score"
+	PIdesc[6]="Score to add for using bad words"
+	PIlabel[7]="Bad words"
+	PIdesc[7]="the so called bad words that will be filtered"
+	PIlabel[8]="Kill score"
+	PIdesc[8]="Score to get before action is taken"
+	PIlabel[9]="Kill action"
+	PIdesc[9]="the action to take when the user hits the kill score"
+	PIlabel[10]="Check nicknames"
+	PIdesc[10]="Check the user's nick name"
+	PIlabel[11]="Bad nick action"
+	PIdesc[11]="Action to take on a bad nick name"
+	PIlabel[12]="Bad nicks contain wildcards"
+	PIdesc[12]="Accept wildcards in the bad nick name list"
+	PIlabel[13]="Warning notification"
+	PIdesc[13]="Notify message to show on the warned user"
+	PIlabel[14]="Warning broadcast"
+	PIdesc[14]="Notify other users when somebody get's warned"
+	PIlabel[15]="Warning action"
+	PIdesc[15]="Action to take when a user receives a warning"
+	PIlabel[16]="Max warnings"
+	PIdesc[16]="Maximum warnings to get before taking action"
+	PIlabel[17]="Min vote percentage"
+	PIdesc[17]="Minimal vote percentage required before an action is taken"
+	PIlabel[18]="Mute message"
+	PIdesc[18]="Message to show when the user is muted"
+	PIlabel[19]="Show muted"
+	PIdesc[19]="show on screen when the user has been muted"
+	PIlabel[20]="Log chat"
+	PIdesc[20]="Log the chats to the log file"
+	PIlabel[21]="Filename format"
+	PIdesc[21]="Filename to use for chat logging"
 }
