@@ -6,7 +6,7 @@
 	Released under the Open Unreal Mod License							<br />
 	http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense				<br />
 
-	<!-- $Id: MutRSS.uc,v 1.7 2004/03/20 08:35:25 elmuerte Exp $ -->
+	<!-- $Id: MutRSS.uc,v 1.8 2004/03/20 21:36:00 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -18,9 +18,11 @@ var protected string SPACE_REPLACE;
 // Configuration options
 /** master enable switch */
 var(Config) config bool bEnabled;
+/*
 /** the client side GUI browser portal to spawn on: "mutate rss browser", after
 	spawning the Create event is called */
 var(Config) config string BrowserPortal;
+*/
 
 /** should the RSS feed content be broadcasted */
 var(Broadcasting) config bool bBroadcastEnabled;
@@ -293,14 +295,12 @@ function Mutate(string MutateString, PlayerController Sender)
 			}
 			if (Feeds[m].Entries.Length == 0) SendMessage(msgEmpty, Sender);
 		}
+		/*
 		else if (cmd[1] ~= "browser")
 		{
-			tmp = "";
-			tmp2 = "";
-			if (cmd.Length > 2) tmp = cmd[2];
-			if (cmd.Length > 3) tmp2 = cmd[3];
-			SummonPortal(Sender, tmp, tmp2);
+			SummonPortal(Sender);
 		}
+		*/
 		// Admin commands
 		else if ((cmd[1] ~= "stop") && (Sender.PlayerReplicationInfo.bAdmin))
 		{
@@ -376,8 +376,9 @@ function Mutate(string MutateString, PlayerController Sender)
 	}
 }
 
+/*
 /** open de client side RSS browser */
-function SummonPortal(PlayerController sender, string param1, string param2)
+function SummonPortal(PlayerController sender)
 {
 	local class<Info> portalclass;
 	local Info portal;
@@ -386,6 +387,7 @@ function SummonPortal(PlayerController sender, string param1, string param2)
 	portal = spawn(portalclass, Sender);
 	portal.Created();
 }
+*/
 
 function Timer()
 {
@@ -517,7 +519,9 @@ defaultproperties
 	bInteractive=true
 	bUpdateEnabled=true
 	iDefUpdateInterval=45
+	/*
 	BrowserPortal="ServerExtClient.RSSBrowserPortal"
+	*/
 
 	msgAdded="Added RSS Feed %s"
 	msgDupName="Already a RSS Feed present with that name: %s"
