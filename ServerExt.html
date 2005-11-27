@@ -112,6 +112,16 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED OF REPAIR OR CORRECTION.
 </pre>
 
 <h2>Revision history</h2>
+<h3>Changes since v107</h3>
+<ul>
+	<li>Fixed non scrolling webadmin pages</li>
+	<li>RSS: Fixed crach on long descriptions, there are now capped at 512 chars</li>
+	<li>Upgraded to LibHTTP 3.6</li>
+	<li>ReservedSlots: added SOM_KickBestSPM and SOM_KickWorstSPM slot open methods</li>
+	<li>ReservedSlots: added bSilentAdmin option to hide admin logins</li>
+	<li>ReservedSlots: added bProtectAdmins option to protect admins from being kicked</li>
+</ul>
+
 <h3>Changes since v106</h3>
 <ul>
 	<li>ReservedSlots: reserved slots users won't be kicked to make room</li>
@@ -503,6 +513,8 @@ Slots=(Data="192.168.*",Type=ST_IP,specOnly=False,Method=SOM_KickRandom)
 				<li>SOM_KickBest - kick the player with the highest score/death ration</li>
 				<li>SOM_KickOldest - kick the player that been the longest on the server</li>
 				<li>SOM_KickNewest - kick the player that joined last</li>
+				<li>SOM_KickBestSPM - kick the player with the best score per minute</li>
+				<li>SOM_KickWorstSPM - kick the player with the worst score per minute</li>
 			</ul>
 			</dd>
 		</dl>

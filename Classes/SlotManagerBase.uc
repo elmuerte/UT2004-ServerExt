@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: SlotManagerBase.uc,v 1.4 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: SlotManagerBase.uc,v 1.5 2005/11/27 12:11:09 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManagerBase extends Info abstract;
 
@@ -71,6 +71,9 @@ function bool PreLogin( string Options, string Address, string PlayerID,
 
 /** modify login info */
 function ModifyLogin(out string Portal, out string Options);
+
+/** player logged out */
+function NotifyLogout(Controller Exiting);
 
 /** increase the capicity */
 function IncreaseCapicity(optional bool bSpectator)

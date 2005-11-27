@@ -5,11 +5,11 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: ResSltMut.uc,v 1.2 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: ResSltMut.uc,v 1.3 2005/11/27 12:11:09 elmuerte Exp $ -->
 *******************************************************************************/
 class ResSltMut extends Mutator cacheexempt;
 
-/** check every tick to decrease the player limit */
+/** check to decrease the player limit */
 function NotifyLogout(Controller Exiting)
 {
     // check normal players
@@ -28,6 +28,8 @@ function NotifyLogout(Controller Exiting)
             Level.Game.MaxSpectators = Level.Game.NumSpectators;
         }
     }
+    if (ReservedSlots(Level.Game.AccessControl) != none) ReservedSlots(Level.Game.AccessControl).NotifyLogout(Exiting);
+    else if (ReservedSlotsIni(Level.Game.AccessControl) != none) ReservedSlotsIni(Level.Game.AccessControl).NotifyLogout(Exiting);
     super.NotifyLogout(Exiting);
 }
 

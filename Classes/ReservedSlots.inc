@@ -4,6 +4,10 @@ var config array<string> SlotManagerClasses;
 var array<SlotManagerBase> SlotManagers;
 /** used to call FillPlayInfo */
 var protected array< class<SlotManagerBase> > SMClasses;
+/** if set to true admin logins won't be announced */
+var config bool bSilentAdmin;
+
+var localized string PIgroup, PIdesc[2], PIhelp[2];
 
 /** initialize */
 event PreBeginPlay()
@@ -51,17 +55,54 @@ function ModifyLogin(out string Portal, out string Options)
     }
 }
 
+/** player logged out */
+function NotifyLogout(Controller Exiting)
+{
+    local int i;
+    for (i = 0; i < SlotManagers.length; i++)
+    {
+        SlotManagers[i].NotifyLogout(Exiting);
+    }
+}
+
 static function FillPlayInfo(PlayInfo PlayInfo)
 {
     local int i;
     super.FillPlayInfo(PlayInfo);
+    PlayInfo.AddSetting(default.PIgroup, "bSilentAdmin", default.PIdesc[0], 200, 1, "Check");
     for (i = 0; i < default.SMClasses.length; i++)
     {
         default.SMClasses[i].static.FillPlayInfo(PlayInfo);
     }
 }
 
+static event string GetDescriptionText(string PropName)
+{
+    switch (PropName)
+    {
+        case "bSilentAdmin":    return default.PIhelp[0];
+    }
+    return "";
+}
+
+function AdminEntered( PlayerController P, string Username)
+{
+    if (bSilentAdmin) return;
+    super.AdminEntered(P, Username);
+}
+
+function AdminExited( PlayerController P )
+{
+	if (bSilentAdmin) return;
+    super.AdminExited(P);
+}
+
 defaultproperties
 {
+    PIgroup="Reserved slots"
+    PIdesc[0]="Silent Admin Login"
+    PIhelp[0]="If set an admin login won't be broadcasted"
+
+    bSilentAdmin=false
     SlotManagerClasses[0]="ServerExt.SlotManager"
 }

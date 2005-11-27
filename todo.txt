@@ -5,5 +5,9 @@ PoW
 - different actions for different words
 
 Reserved Slots
-- kick on rating:
-	take into account time played on a servrers
+
+- add "limit" of uses of a slot at the time
+
+Mut Team Balance
+- 2 teams, size diff = 1, larger team score > smaller team score
+	make it possible to force a player to the smaller losing team

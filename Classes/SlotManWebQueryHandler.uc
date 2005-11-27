@@ -5,13 +5,13 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: SlotManWebQueryHandler.uc,v 1.3 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: SlotManWebQueryHandler.uc,v 1.4 2005/11/27 12:11:09 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManWebQueryHandler extends SExWebQueryHandler;
 
 var protected SlotManager SlotManager;
 
-var localized string SlotType[5], MethodType[6], PageHelp;
+var localized string SlotType[5], MethodType[8], PageHelp;
 
 function bool Init()
 {
@@ -24,10 +24,12 @@ function bool Init()
 
 function bool Query(WebRequest Request, WebResponse Response)
 {
+    if (super.Query(Request, Response)) return true;
     switch (Mid(Request.URI, 1))
     {
         case DefaultPage:   QuerySlots(Request, Response); return true;
     }
+    return false;
 }
 
 function QuerySlots(WebRequest Request, WebResponse Response)
@@ -116,6 +118,8 @@ defaultproperties
     MethodType[3]="Kick best player"
     MethodType[4]="Kick oldest player"
     MethodType[5]="Kick newest player"
+    MethodType[6]="Kick best player (score/minute)"
+    MethodType[7]="Kick worst player (score/minute)"
 
     PageHelp="On this page you can change the reserved slots. each slot can have different behaviour settings. Consult the readme file if the information isn't clear enough."
 }

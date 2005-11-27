@@ -6,7 +6,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: RSSWebQueryHandler.uc,v 1.6 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: RSSWebQueryHandler.uc,v 1.7 2005/11/27 12:11:09 elmuerte Exp $ -->
 *******************************************************************************/
 
 class RSSWebQueryHandler extends SExWebQueryHandler;
@@ -24,10 +24,12 @@ function bool Init()
 
 function bool Query(WebRequest Request, WebResponse Response)
 {
+    if (super.Query(Request, Response)) return true;
     switch (Mid(Request.URI, 1))
     {
         case DefaultPage:   QueryFeeds(Request, Response); return true;
     }
+    return false;
 }
 
 function QueryFeeds(WebRequest Request, WebResponse Response)
@@ -101,7 +103,6 @@ function QueryFeeds(WebRequest Request, WebResponse Response)
         tmp $= "<option value=\""$i$"\">"$MutRSS.Feeds[i].rssHost$"</option>";
     }
     Response.Subst("feed_select", tmp);
-    Response.Subst("PostAction", DefaultPage);
     ShowPage(Response, DefaultPage);
 }
 
