@@ -1,11 +1,11 @@
 /*******************************************************************************
     Slot Manager webadmin                                               <br />
 
-    (c) 2004, Michiel "El Muerte" Hendriks                              <br />
+    (c) 2004-2005, Michiel "El Muerte" Hendriks                              <br />
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: SlotManWebQueryHandler.uc,v 1.4 2005/11/27 12:11:09 elmuerte Exp $ -->
+    <!-- $Id: SlotManWebQueryHandler.uc,v 1.5 2005/12/05 10:06:08 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManWebQueryHandler extends SExWebQueryHandler;
 

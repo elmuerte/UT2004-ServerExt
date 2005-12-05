@@ -1,11 +1,11 @@
 /*******************************************************************************
     Actual slot manager close                                           <br />
 
-    (c) 2004, Michiel "El Muerte" Hendriks                              <br />
+    (c) 2004-2005, Michiel "El Muerte" Hendriks                              <br />
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: SlotManager.uc,v 1.10 2005/11/27 12:11:09 elmuerte Exp $ -->
+    <!-- $Id: SlotManager.uc,v 1.11 2005/12/05 10:06:08 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManager extends SlotManagerBase config parseconfig;
 

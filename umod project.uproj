@@ -5,8 +5,8 @@ name=ServerExt
 Help\ServerExt\RemoteLogDump.php
 System\ServerExtClientA.int
 System\ServerExtClientA.u
-System\ServerExtClientB.int
-System\ServerExtClientB.u
+System\ServerExtClientB_2.int
+System\ServerExtClientB_2.u
 System\LibHTTP3_5.u
 System\ServerExt.u
 System\ServerExt.int

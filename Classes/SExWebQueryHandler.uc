@@ -1,14 +1,15 @@
 /*******************************************************************************
     General query handler for ServerExt packages                        <br />
 
-    (c) 2004, Michiel "El Muerte" Hendriks                              <br />
+    (c) 2004-2005, Michiel "El Muerte" Hendriks                              <br />
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: SExWebQueryHandler.uc,v 1.3 2005/11/27 12:11:09 elmuerte Exp $ -->
+    <!-- $Id: SExWebQueryHandler.uc,v 1.4 2005/12/05 10:06:08 elmuerte Exp $ -->
 *******************************************************************************/
 class SExWebQueryHandler extends xWebQueryHandler abstract;
 
+/** the single frame file */
 var string singleFrame;
 
 /** if bValid is false, remove itself from the query handler list */
