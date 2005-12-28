@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: SlotManWebQueryHandler.uc,v 1.5 2005/12/05 10:06:08 elmuerte Exp $ -->
+    <!-- $Id: SlotManWebQueryHandler.uc,v 1.6 2005/12/28 14:46:09 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManWebQueryHandler extends SExWebQueryHandler;
 
@@ -73,7 +73,7 @@ function QuerySlots(WebRequest Request, WebResponse Response)
     for (i = 0; i < SlotManager.Slots.Length; i++)
     {
         Response.Subst("sid", i);
-        Response.Subst("data", SlotManager.Slots[i].data);
+        Response.Subst("data", HtmlEncode(SlotManager.Slots[i].data));
         if (SlotManager.Slots[i].specOnly) Response.Subst("speconly", "checked");
             else Response.Subst("speconly", "");
         tmp = "";
@@ -92,7 +92,7 @@ function QuerySlots(WebRequest Request, WebResponse Response)
             tmp $= ">"$MethodType[j];
         }
         Response.Subst("method", tmp);
-        Response.Subst("comment", SlotManager.Slots[i].comment);
+        Response.Subst("comment", HtmlEncode(SlotManager.Slots[i].comment));
         slots = slots $ WebInclude(DefaultPage $ "-entry");
     }
     Response.Subst("slots", slots);

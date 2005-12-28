@@ -6,7 +6,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: RSSWebQueryHandler.uc,v 1.7 2005/11/27 12:11:09 elmuerte Exp $ -->
+    <!-- $Id: RSSWebQueryHandler.uc,v 1.8 2005/12/28 14:46:09 elmuerte Exp $ -->
 *******************************************************************************/
 
 class RSSWebQueryHandler extends SExWebQueryHandler;
@@ -48,7 +48,7 @@ function QueryFeeds(WebRequest Request, WebResponse Response)
             fr.rssHost = Request.GetVariable("rssHost", "");
             fr.rssLocation = Request.GetVariable("rssLocation", "");
             fr.rssUpdateInterval = max(0, int(Request.GetVariable("rssUpdateInterval", string(MutRSS.iDefUpdateInterval))));
-            fr.Saveconfig();
+            fr.Save();
             MutRSS.Feeds[MutRSS.Feeds.length] = fr;
             feedid = MutRSS.Feeds.length-1;
         }
@@ -69,7 +69,7 @@ function QueryFeeds(WebRequest Request, WebResponse Response)
         fr.rssHost = Request.GetVariable("rssHost", "");
         fr.rssLocation = Request.GetVariable("rssLocation", "");
         fr.rssUpdateInterval = max(0, int(Request.GetVariable("rssUpdateInterval", string(MutRSS.iDefUpdateInterval))));
-        fr.Saveconfig();
+        fr.Save();
     }
     else if (Request.GetVariable("submit", "") ~= "delete")
     {
@@ -82,6 +82,43 @@ function QueryFeeds(WebRequest Request, WebResponse Response)
             fr = none;
         }
     }
+    else if (Request.GetVariable("submit", "") ~= "edit-entry")
+    {
+        feedid = int(Request.GetVariable("feedid", "0"));
+        fr = MutRSS.Feeds[feedid];
+        tmp = Request.GetVariable("action" , "");
+        i = int(Request.GetVariable("entry_id", "0"));
+        if (tmp ~= "update")
+        {
+            if (i >= fr.Entries.length) fr.Entries.length = i+1;
+            fr.Entries[i].Title = Request.GetVariable("entry_title" , "");
+            fr.Entries[i].Link = Request.GetVariable("entry_link" , "");
+            fr.Entries[i].Desc = Request.GetVariable("entry_description" , "");
+        }
+        else if (tmp ~= "delete")
+        {
+            if (i < fr.Entries.length) fr.Entries.Remove(i, 1);
+        }
+        else if (tmp ~= "up")
+        {
+            if ((i > 0) && (i < fr.Entries.length))
+            {
+                fr.Entries.Insert(i-1, 1);
+                fr.Entries[i-1] = fr.Entries[i+1];
+                fr.Entries.Remove(i+1, 1);
+            }
+        }
+        else if (tmp ~= "down")
+        {
+            if (i < fr.Entries.length)
+            {
+                fr.Entries.Insert(i+2, 1);
+                fr.Entries[i+2] = fr.Entries[i];
+                fr.Entries.Remove(i, 1);
+            }
+        }
+        fr.Save();
+    }
 
     if (fr != none)
     {
@@ -91,19 +128,46 @@ function QueryFeeds(WebRequest Request, WebResponse Response)
         Response.Subst("rssLocation", fr.rssLocation);
         Response.Subst("rssUpdateInterval", fr.rssUpdateInterval);
         Response.Subst("feed_action", "Update");
+        tmp = "";
+        for (i = 0; i < fr.Entries.length; i++)
+        {
+            if (i % 2 == 0) Response.Subst("altbg", "n");
+            else Response.Subst("altbg", "nabg");
+            Response.Subst("entry_id", i);
+            Response.Subst("entry_title", HtmlEncode(UnescapeQuotes(fr.Entries[i].Title)));
+            Response.Subst("entry_link", HtmlEncode(fr.Entries[i].Link));
+            Response.Subst("entry_description", HtmlEncode(UnescapeQuotes(fr.Entries[i].Desc)));
+            tmp $= Response.LoadParsedUHTM(Path $ SkinPath $ "/" $ "rssfeeds_lineentry.inc");
+        }
+        if (i % 2 == 0) Response.Subst("altbg", "n");
+        else Response.Subst("altbg", "nabg");
+        Response.Subst("entry_id", i);
+        Response.Subst("entry_title", "");
+        Response.Subst("entry_link", "");
+        Response.Subst("entry_description", "");
+        tmp $= Response.LoadParsedUHTM(Path $ SkinPath $ "/" $ "rssfeeds_lineentry.inc");
+        Response.Subst("feed_entries", tmp);
     }
     else {
         Response.Subst("rssUpdateInterval", MutRSS.iDefUpdateInterval);
         //Response.Subst("TextColor", class'RSSFeedRecord'.default.TextColor);
         Response.Subst("feed_action", "Add");
+        Response.Subst("feed_entries", "");
     }
 
+    tmp = "";
     for (i = 0; i < MutRSS.Feeds.Length; i++)
     {
         tmp $= "<option value=\""$i$"\">"$MutRSS.Feeds[i].rssHost$"</option>";
     }
     Response.Subst("feed_select", tmp);
     ShowPage(Response, DefaultPage);
+}
+
+/** fix a bug for escaped double qoutes in dynamic struct arrays */
+static function string UnescapeQuotes(string in)
+{
+    return repl(in, "\\\"", "\"");
 }
 
 defaultproperties

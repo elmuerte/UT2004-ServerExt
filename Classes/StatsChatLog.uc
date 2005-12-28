@@ -7,7 +7,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: StatsChatLog.uc,v 1.5 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: StatsChatLog.uc,v 1.6 2005/12/28 14:46:09 elmuerte Exp $ -->
 *******************************************************************************/
 class StatsChatLog extends BroadcastHandler;
 
@@ -17,6 +17,8 @@ const SPECPRE = "spec_";
 
 function PreBeginPlay()
 {
+    local BroadcastHandler BH;
+
     log("Loading StatsChatLog...", name);
     statslog = Level.Game.GameStats;
     if (statslog == none)
@@ -31,8 +33,22 @@ function PreBeginPlay()
         log("   [Engine.GameStats]", name);
         log("   bLocalLog=true", name);
     }
-    if (Level.Game.BroadcastHandler != none) Level.Game.BroadcastHandler.RegisterBroadcastHandler(self);
-    else Log("Error registering broadcast handler", name);
+    if (Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler'))
+    {
+        log("WARNING: A broken broadcast handler is being used: "$Level.Game.BroadcastHandler.class, name);
+        foreach AllActors(class'BroadcastHandler', BH)
+        {
+            if (BH.class == Level.Game.default.BroadcastClass)
+            {
+                log("Found the original broadcast handler "$BH.class, name);
+                BH.RegisterBroadcastHandler(Self);
+                break;
+            }
+        }
+    }
+    else {
+        Level.Game.BroadcastHandler.RegisterBroadcastHandler(Self);
+    }
 }
 
 function BroadcastText( PlayerReplicationInfo SenderPRI, PlayerController Receiver, coerce string Msg, optional name Type )

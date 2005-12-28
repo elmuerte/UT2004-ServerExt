@@ -6,14 +6,14 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: MutRSS.uc,v 1.25 2005/12/05 10:06:08 elmuerte Exp $ -->
+    <!-- $Id: MutRSS.uc,v 1.26 2005/12/28 14:46:09 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
 
 #include classes/const.inc
 
-const VERSION = 104;
+const VERSION = 105;
 /** character to replace the spaces in the config names with */
 var string SPACE_REPLACE;
 
@@ -280,7 +280,7 @@ function RSSResolveFailed(HttpSock sender, string hostname)
     log("Error resolving RSS location host:"@hostname, name);
     log("RSS Feed disabled", name);
     Feeds[UpdatePos].rssEnabled = false;
-    Feeds[UpdatePos].SaveConfig();
+    Feeds[UpdatePos].Save();
     // get next feed
     UpdatePos++;
     UpdateRSSFeeds();
@@ -464,7 +464,7 @@ function Mutate(string MutateString, PlayerController Sender)
             fr.rssHost = cmd[2];
             fr.rssLocation = cmd[3];
             fr.rssUpdateInterval = iDefUpdateInterval;
-            fr.Saveconfig();
+            fr.Save();
             Feeds[Feeds.length] = fr;
             SendMessage(repl(msgAdded, "%s", fr.rssHost), Sender);
             if (UpdatePos >= Feeds.Length-1)

@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: ChatFilter.uc,v 1.9 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: ChatFilter.uc,v 1.10 2005/12/28 14:46:09 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -474,6 +474,8 @@ function GameInformation()
 event PreBeginPlay()
 {
     local int i,j;
+    local BroadcastHandler BH;
+
     if (!bEnabled)
     {
         Self.Destroy();
@@ -487,7 +489,22 @@ event PreBeginPlay()
         logfile.Logf("--- Log started on "$Level.Year$"/"$Level.Month$"/"$Level.Day@Level.Hour$":"$Level.Minute$":"$Level.Second);
         GameInformation();
     }
-    Level.Game.BroadcastHandler.RegisterBroadcastHandler(Self);
+    if (Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler'))
+    {
+        log("WARNING: A broken broadcast handler is being used: "$Level.Game.BroadcastHandler.class, name);
+        foreach AllActors(class'BroadcastHandler', BH)
+        {
+            if (BH.class == Level.Game.default.BroadcastClass)
+            {
+                log("Found the original broadcast handler "$BH.class, name);
+                BH.RegisterBroadcastHandler(Self);
+                break;
+            }
+        }
+    }
+    else {
+        Level.Game.BroadcastHandler.RegisterBroadcastHandler(Self);
+    }
     if (KillAction == CFA_Warn && bWarnVoting)
     {
         log("Launching warning mutator", name);
@@ -522,6 +539,7 @@ event Timer()
     for (i = 0; i < ChatRecords.Length; i++)
     {
         ChatRecords[i].msgCount = 0;
+        ChatRecords[i].count = 0;
     }
 }
 
@@ -548,7 +566,6 @@ event Tick(float delta)
     }
 }
 
-//function Broadcast( Actor Sender, coerce string Msg, optional name Type )
 function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationInfo SenderPRI, out string Msg, optional name Type )
 {
     local int cr;
