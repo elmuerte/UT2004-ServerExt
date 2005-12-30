@@ -1,16 +1,19 @@
 /*******************************************************************************
     ChatFilter filters the chat for bad words                           <br />
 
-    (c) 2004, Michiel "El Muerte" Hendriks                              <br />
+    (c) 2004-2005, Michiel "El Muerte" Hendriks                              <br />
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: ChatFilter.uc,v 1.10 2005/12/28 14:46:09 elmuerte Exp $ -->
+    <!-- $Id: ChatFilter.uc,v 1.11 2005/12/30 11:52:14 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
 
 #include classes/const.inc
+
+/** if set to true it will not try to find the right broadcast handler */
+var config bool bDisableBHFix;
 
 /** used to disable it via the WebAdmin */
 var(Config) config bool bEnabled;
@@ -489,9 +492,9 @@ event PreBeginPlay()
         logfile.Logf("--- Log started on "$Level.Year$"/"$Level.Month$"/"$Level.Day@Level.Hour$":"$Level.Minute$":"$Level.Second);
         GameInformation();
     }
-    if (Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler'))
+    if (!bDisableBHFix && (BH.class != Level.Game.default.BroadcastClass) /*Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler')*/)
     {
-        log("WARNING: A broken broadcast handler is being used: "$Level.Game.BroadcastHandler.class, name);
+        log("WARNING: Unexpected broadcast handler `"$Level.Game.BroadcastHandler.class$"`. Will try to use the original.", name);
         foreach AllActors(class'BroadcastHandler', BH)
         {
             if (BH.class == Level.Game.default.BroadcastClass)
@@ -500,6 +503,11 @@ event PreBeginPlay()
                 BH.RegisterBroadcastHandler(Self);
                 break;
             }
+        }
+        if (BH == none)
+        {
+            log("Unable to find the original broadcast handler. Will fallback to the current handler and hope it works out.");
+            Level.Game.BroadcastHandler.RegisterBroadcastHandler(Self);
         }
     }
     else {
@@ -723,6 +731,8 @@ function string LogFilename()
 
 defaultproperties
 {
+    bDisableBHFix=false
+
     bEnabled=true
     fTimeFrame=1.0000
     iMaxPerTimeFrame=2
