@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: ChatFilter.uc,v 1.11 2005/12/30 11:52:14 elmuerte Exp $ -->
+    <!-- $Id: ChatFilter.uc,v 1.12 2006/01/06 20:32:06 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -157,6 +157,12 @@ var class<CFMsgDispatcher> MessageDispatcherClass;
 var float LastMsgTick;
 
 var localized string PICat, PIlabel[23], PIdesc[23];
+
+/** last\current nick name to track changes */
+var array<string> NameHistory;
+
+/** last time the nicknames were checked */
+var float LastNickCheck;
 
 /** Find a player record and create a new one when needed */
 function int findChatRecord(Actor Sender, optional bool bCreate)
@@ -492,7 +498,7 @@ event PreBeginPlay()
         logfile.Logf("--- Log started on "$Level.Year$"/"$Level.Month$"/"$Level.Day@Level.Hour$":"$Level.Minute$":"$Level.Second);
         GameInformation();
     }
-    if (!bDisableBHFix && (BH.class != Level.Game.default.BroadcastClass) /*Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler')*/)
+    if (!bDisableBHFix && (Level.Game.BroadcastHandler.class != Level.Game.default.BroadcastClass) /*Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler')*/)
     {
         log("WARNING: Unexpected broadcast handler `"$Level.Game.BroadcastHandler.class$"`. Will try to use the original.", name);
         foreach AllActors(class'BroadcastHandler', BH)
@@ -564,12 +570,21 @@ event Tick(float delta)
     // check nickname
     if (bCheckNicknames)
     {
+        LastNickCheck += delta;
+        if (LastNickCheck < 1) return;
+        LastNickCheck = 0;
         for( C = Level.ControllerList; C != None; C = C.NextController )
         {
             if (C.PlayerReplicationInfo == none) continue;
-            // nick change
-            if (C.PlayerReplicationInfo.PlayerName == C.PlayerReplicationInfo.OldName) continue;
-            if ((!C.PlayerReplicationInfo.bBot) && (MessagingSpectator(C) == none)) CheckNickname(PlayerController(C));
+            if (C.PlayerReplicationInfo.bBot || (MessagingSpectator(C) != none)) continue; // fast escape
+            if (NameHistory.length <= C.PlayerReplicationInfo.PlayerID) NameHistory.length = C.PlayerReplicationInfo.PlayerID+1;
+            if (C.PlayerReplicationInfo.PlayerName != NameHistory[C.PlayerReplicationInfo.PlayerID])
+            {
+                if (bLogChat && (NameHistory[C.PlayerReplicationInfo.PlayerID] != ""))
+                    WriteLog(PlayerController(C), "old name: "$NameHistory[C.PlayerReplicationInfo.PlayerID], "NAMECHANGE");
+                NameHistory[C.PlayerReplicationInfo.PlayerID] = C.PlayerReplicationInfo.PlayerName;
+                CheckNickname(PlayerController(C));
+            }
         }
     }
 }

@@ -7,9 +7,12 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: StatsChatLog.uc,v 1.6 2005/12/28 14:46:09 elmuerte Exp $ -->
+    <!-- $Id: StatsChatLog.uc,v 1.7 2006/01/06 20:32:06 elmuerte Exp $ -->
 *******************************************************************************/
 class StatsChatLog extends BroadcastHandler;
+
+/** if set to true it will not try to find the right broadcast handler */
+var config bool bDisableBHFix;
 
 var protected GameStats statslog;
 
@@ -33,9 +36,9 @@ function PreBeginPlay()
         log("   [Engine.GameStats]", name);
         log("   bLocalLog=true", name);
     }
-    if (Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler'))
+    if (!bDisableBHFix && (Level.Game.BroadcastHandler.class != Level.Game.default.BroadcastClass) /*Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler')*/)
     {
-        log("WARNING: A broken broadcast handler is being used: "$Level.Game.BroadcastHandler.class, name);
+        log("WARNING: Unexpected broadcast handler `"$Level.Game.BroadcastHandler.class$"`. Will try to use the original.", name);
         foreach AllActors(class'BroadcastHandler', BH)
         {
             if (BH.class == Level.Game.default.BroadcastClass)
@@ -44,6 +47,11 @@ function PreBeginPlay()
                 BH.RegisterBroadcastHandler(Self);
                 break;
             }
+        }
+        if (BH == none)
+        {
+            log("Unable to find the original broadcast handler. Will fallback to the current handler and hope it works out.");
+            Level.Game.BroadcastHandler.RegisterBroadcastHandler(Self);
         }
     }
     else {
@@ -67,3 +75,7 @@ function BroadcastText( PlayerReplicationInfo SenderPRI, PlayerController Receiv
     super.BroadcastText(SenderPRI, Receiver, Msg, Type);
 }
 
+defaultproperties
+{
+    bDisableBHFix=false
+}

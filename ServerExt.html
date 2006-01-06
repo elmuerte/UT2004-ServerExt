@@ -109,6 +109,14 @@ YOU WILL ASSUME ALL COSTS FOR REQUIRED REPAIR OR CORRECTION.
 </pre>
 
 <h2>Revision history</h2>
+
+<h3>Changes since v108</h3>
+<ul>
+	<li>Fixed a performance issue in the ChatFilter bad name checking [BT#11]</li>
+	<li>Changed critical player check to use the GameInfo's CriticalPlayer function</li>
+	<li>Made the broadcast handler check more foolproof. This can be disabled for ChatFilter and StatsChatLog by setting bDisableBHFix=false</li>
+</ul>
+
 <h3>Changes since v107</h3>
 <ul>
 	<li>Fixed non scrolling webadmin pages</li>
