@@ -82,7 +82,7 @@ static event string GetDescriptionText(string PropName)
     {
         case "bSilentAdmin":    return default.PIhelp[0];
     }
-    return "";
+    return super.GetDescriptionText(PropName);
 }
 
 function AdminEntered( PlayerController P, string Username)
