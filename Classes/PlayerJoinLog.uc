@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: PlayerJoinLog.uc,v 1.2 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: PlayerJoinLog.uc,v 1.3 2006/01/07 09:46:35 elmuerte Exp $ -->
 *******************************************************************************/
 class PlayerJoinLog extends info config;
 
@@ -16,8 +16,10 @@ var FileLog extlog;
 var config bool bExternalLog;
 /** the filename of the external log */
 var config string sFileFormat;
+/** number of seconds between checks, if <= 0 it will check every tick */
+var config float fPriority;
 
-const VERSION = "100";
+const VERSION = "101";
 
 /** player cache record */
 struct PlayerCache
@@ -33,7 +35,7 @@ var array<PlayerCache> cache;
 
 var int lastID;
 
-function PostBeginPlay()
+function PreBeginPlay()
 {
     log("Starting PlayerJoinLog version "$VERSION, name);
     if (bExternalLog)
@@ -41,19 +43,26 @@ function PostBeginPlay()
         extlog = spawn(class'FileLog');
         extlog.OpenLog(LogFilename());
     }
-    Enable('Tick');
+    Disable('Tick');
+    if (fPriority <= 0) Enable('Tick');
+    else SetTimer(fPriority, true);
     lastID = -1;
 }
 
 function Tick(float DeltaTime)
 {
-    if (lastID < Level.Game.CurrentID) CheckPlayerList();
+    CheckPlayerList();
+}
+
+event Timer()
+{
+    CheckPlayerList();
 }
 
 function CheckPlayerList()
 {
     local int pLoc, magicint;
-    local string ipstr, typemsg;
+    local string ipstr, typemsg, ts;
     local PlayerController PC;
     local Controller C;
 
@@ -61,6 +70,7 @@ function CheckPlayerList()
 
     if (Level.Game.CurrentID > cache.length) cache.length = Level.Game.CurrentID+1; // make cache larger
     magicint = Rand(MaxInt);
+    ts = Timestamp();
 
     for( C = Level.ControllerList; C != None; C = C.NextController )
     {
@@ -79,11 +89,11 @@ function CheckPlayerList()
                 cache[pLoc].spec = PC.PlayerReplicationInfo.bOnlySpectator;
                 cache[pLoc].ip = ipstr;
                 cache[pLoc].name = PC.PlayerReplicationInfo.PlayerName;
-                LogLine("["$typemsg$"_JOIN]"@Timestamp()$chr(9)$PC.PlayerReplicationInfo.PlayerName$chr(9)$ipstr$chr(9)$PC.Player.CurrentNetSpeed$chr(9)$PC.GetPlayerIDHash());
+                LogLine("["$typemsg$"_JOIN] "$ts$chr(9)$PC.PlayerReplicationInfo.PlayerName$chr(9)$ipstr$chr(9)$PC.Player.CurrentNetSpeed$chr(9)$PC.GetPlayerIDHash());
             }
             else if (cache[pLoc].name != PC.PlayerReplicationInfo.PlayerName)
             {
-                LogLine("["$typemsg$"_NAME_CHANGE]"@Timestamp()$chr(9)$cache[pLoc].name$chr(9)$PC.PlayerReplicationInfo.PlayerName);
+                LogLine("["$typemsg$"_NAME_CHANGE] "$ts$chr(9)$cache[pLoc].name$chr(9)$PC.PlayerReplicationInfo.PlayerName);
                 cache[pLoc].name = PC.PlayerReplicationInfo.PlayerName;
             }
             cache[pLoc].magic = magicint;
@@ -98,7 +108,7 @@ function CheckPlayerList()
             cache[pLoc].magic = -1;
             if (cache[pLoc].spec) typemsg = "SPECTATOR";
             else typemsg = "PLAYER";
-            LogLine("[PLAYER_PART]"@Timestamp()$chr(9)$cache[pLoc].name);
+            LogLine("["$typemsg$"_PART] "$ts$chr(9)$cache[pLoc].name);
         }
     }
 }
@@ -158,4 +168,5 @@ defaultproperties
 {
     bExternalLog=false
     sFileFormat="PlayerJoin_%P_%Y_%M_%D_%H_%I_%S"
+    fPriority=1
 }
