@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: SlotManagerBase.uc,v 1.6 2005/12/05 10:06:08 elmuerte Exp $ -->
+    <!-- $Id: SlotManagerBase.uc,v 1.7 2006/01/14 15:45:02 elmuerte Exp $ -->
 *******************************************************************************/
 class SlotManagerBase extends Info abstract;
 
@@ -14,9 +14,9 @@ class SlotManagerBase extends Info abstract;
 /** query handler to add to the webadmin */
 var string WebQueryHandler;
 
-event PreBeginPlay()
+event PostBeginPlay()
 {
-    super.PreBeginPlay();
+    super.PostBeginPlay();
     if (WebQueryHandler != "") LoadWebAdmin();
 }
 
@@ -42,7 +42,7 @@ function LoadWebAdmin()
         }
         return;
     }
-    for (i = 0; i < webadmin.QueryHandlerClasses.Length-1; i++)
+    for (i = 0; i < webadmin.QueryHandlerClasses.Length; i++)
     {
         if (webadmin.QueryHandlerClasses[i] == WebQueryHandler) break;
     }

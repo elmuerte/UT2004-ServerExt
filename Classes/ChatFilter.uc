@@ -1,11 +1,11 @@
 /*******************************************************************************
     ChatFilter filters the chat for bad words                           <br />
 
-    (c) 2004-2005, Michiel "El Muerte" Hendriks                              <br />
+    (c) 2004-2006, Michiel "El Muerte" Hendriks                         <br />
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: ChatFilter.uc,v 1.12 2006/01/06 20:32:06 elmuerte Exp $ -->
+    <!-- $Id: ChatFilter.uc,v 1.13 2006/01/14 15:45:02 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ChatFilter extends BroadcastHandler config;
@@ -101,6 +101,13 @@ var(Config) config string sFileFormat;
 /** the file log instance for the chat log */
 var FileLog logfile;
 
+/** Webadmin receives unfiltered chat messages */
+var(Config) config bool bUnfilteredWebAdmin;
+/** Logged-in admin receives unfiltered chat messages */
+var(Config) config bool bUnfilteredAdmin;
+/** WebAdmin received team messages */
+var(Config) config bool bWebAdminReceiveTeam;
+
 // message target filtering -- NOT IMPLEMENTED
 const CD_P2P = 1; // player -> player
 const CD_S2S = 2; // spectator -> spectator
@@ -156,13 +163,17 @@ var class<CFMsgDispatcher> MessageDispatcherClass;
 
 var float LastMsgTick;
 
-var localized string PICat, PIlabel[23], PIdesc[23];
+var localized string PICat, PIlabel[26], PIdesc[26];
 
 /** last\current nick name to track changes */
 var array<string> NameHistory;
 
 /** last time the nicknames were checked */
 var float LastNickCheck;
+
+/** WebAdmin playercontroller */
+var UTServerAdminSpectator WebAdminPC;
+var bool HasWebAdmin;
 
 /** Find a player record and create a new one when needed */
 function int findChatRecord(Actor Sender, optional bool bCreate)
@@ -589,6 +600,37 @@ event Tick(float delta)
     }
 }
 
+function BroadcastText( PlayerReplicationInfo SenderPRI, PlayerController Receiver, coerce string Msg, optional name Type )
+{
+    local string lmsg;
+    // elmuerte: this is sort of a bug in the parent code, acceptbroadcast is called
+    //   for every player and every boradcasthandler. It should actually only be called
+    //   once for every player since AcceptBroadcastText already checks with the other
+    //   handlers.
+
+	//if ( !AcceptBroadcastText(Receiver, SenderPRI, Msg, Type) )
+	//	return;
+
+	if (bWebAdminReceiveTeam && (SenderPRI == Receiver.PlayerReplicationInfo) && HasWebAdmin && (Type == 'TeamSay'))
+	{
+        if (WebAdminPC == none)
+            foreach AllActors(class'UTServerAdminSpectator', WebAdminPC) break;
+        if (WebAdminPC == none) HasWebAdmin = false;
+        else {
+            lmsg = msg;
+            if (AcceptBroadcastText(WebAdminPC, SenderPRI, lmsg, type))
+            {
+                lmsg = "[Team:"$SenderPRI.Team.GetHumanReadableName()$"] "$lmsg;
+                WebAdminPC.TeamMessage(SenderPRI, lmsg, type);
+            }
+        }
+	}
+
+	if ( NextBroadcastHandler != None )
+		NextBroadcastHandler.BroadcastText( SenderPRI, Receiver, Msg, Type );
+	else Receiver.TeamMessage( SenderPRI, Msg, Type );
+}
+
 function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationInfo SenderPRI, out string Msg, optional name Type )
 {
     local int cr;
@@ -598,8 +640,11 @@ function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationI
     if (SenderPRI != none) cr = findChatRecord(SenderPRI.Owner, true);
     if ((cr > -1 ) && (ChatRecords[cr].LastMsgTick == LastMsgTick))
     {
-        //log("duplicate request ("$LastMsgTick@ChatRecords[cr].LastMsgTick$"), use cached:"@SenderPRI.PlayerName@"->"@Receiver.PlayerReplicationInfo.PlayerName);
-        msg = ChatRecords[cr].FilteredMsg;
+        if (!(bUnfilteredWebAdmin && Receiver.IsA('UTServerAdminSpectator'))
+            &&
+            !(bUnfilteredAdmin && Receiver.PlayerReplicationInfo.bAdmin)
+            )
+            msg = ChatRecords[cr].FilteredMsg;
         return super.AcceptBroadcastText(Receiver, SenderPRI, Msg, Type);
     }
     if ((cr > -1) && ((Type == 'Say') || (Type == 'TeamSay')))
@@ -644,8 +689,14 @@ function bool AcceptBroadcastText( PlayerController Receiver, PlayerReplicationI
     }
     if (cr > -1)
     {
-        Msg = filterString(Msg, cr);
-        ChatRecords[cr].FilteredMsg = Msg;
+        ChatRecords[cr].FilteredMsg = filterString(Msg, cr);
+
+        if (!(bUnfilteredWebAdmin && Receiver.IsA('UTServerAdminSpectator'))
+            &&
+            !(bUnfilteredAdmin && Receiver.PlayerReplicationInfo.bAdmin)
+            )
+            msg = ChatRecords[cr].FilteredMsg;
+
         judge(PlayerController(SenderPRI.Owner), cr);
     }
     return super.AcceptBroadcastText(Receiver, SenderPRI, Msg, Type);
@@ -663,6 +714,10 @@ static function FillPlayInfo(PlayInfo PI)
     PI.AddSetting(default.PICat, "CencorWord", default.PIlabel[5], 10, 5, "Text", "20");
     PI.AddSetting(default.PICat, "iScoreSwear", default.PIlabel[6], 10, 6, "Text", "5");
     //PI.AddSetting(default.PICat, "BadWords", default.PIlabel[7], 10, 7, "Textarea", "");
+
+    PI.AddSetting(default.PICat, "bUnfilteredWebAdmin", default.PIlabel[23], 10, 7, "Check");
+    PI.AddSetting(default.PICat, "bUnfilteredAdmin", default.PIlabel[24], 10, 7, "Check");
+    PI.AddSetting(default.PICat, "bWebAdminReceiveTeam", default.PIlabel[25], 10, 7, "Check");
 
     PI.AddSetting(default.PICat, "iKillScore", default.PIlabel[8], 10, 8, "Text", "5");
     PI.AddSetting(default.PICat, "KillAction", default.PIlabel[9], 10, 9, "Select", "CFA_Nothing;Nothing;CFA_Warn;Warn player;CFA_Kick;Kick player;CFA_Ban;Ban player;CFA_SessionBan;Ban player this session;CFA_Defrag;Remove one point;CFA_Mute;Mute player for this game");
@@ -713,8 +768,11 @@ static event string GetDescriptionText(string PropName)
         case "bLogChat": return default.PIdesc[20];
         case "sFileFormat": return default.PIdesc[21];
         case "bWarnVoting": return default.PIdesc[22];
+        case "bUnfilteredWebAdmin": return default.PIdesc[23];
+        case "bUnfilteredAdmin": return default.PIdesc[24];
+        case "bWebAdminReceiveTeam": return default.PIdesc[25];
     }
-    return "";
+    return super.GetDescriptionText(PropName);
 }
 
 function string GetServerPort()
@@ -772,6 +830,10 @@ defaultproperties
     ChatDirection=255
     bLogChat=false
     sFileFormat="ChatFilter_%P_%Y_%M_%D_%H_%I_%S"
+    bUnfilteredWebAdmin=false
+    bUnfilteredAdmin=false
+    bWebAdminReceiveTeam=false
+    HasWebAdmin=true
 
     WarningMutClass="ServerExt.CFWarningMut"
 
@@ -822,4 +884,10 @@ defaultproperties
     PIdesc[21]="Filename to use for chat logging"
     PIlabel[22]="Warning voting"
     PIdesc[22]="Allow other players to vote on a judgement after a warning"
+    PIlabel[23]="Unfiltered WebAdmin"
+    PIdesc[23]="The webadmin receives the unfiltered text"
+    PIlabel[24]="Unfiltered Admin"
+    PIdesc[24]="A logged-in admin receives the unfiltered text"
+    PIlabel[25]="WebAdmin TeamChat"
+    PIdesc[25]="The WebAdmin can see team chat"
 }

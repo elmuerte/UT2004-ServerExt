@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: PlayerJoinLog.uc,v 1.3 2006/01/07 09:46:35 elmuerte Exp $ -->
+    <!-- $Id: PlayerJoinLog.uc,v 1.4 2006/01/14 15:45:02 elmuerte Exp $ -->
 *******************************************************************************/
 class PlayerJoinLog extends info config;
 
@@ -62,15 +62,14 @@ event Timer()
 function CheckPlayerList()
 {
     local int pLoc, magicint;
-    local string ipstr, typemsg, ts;
+    local string ipstr, ts;
     local PlayerController PC;
     local Controller C;
 
     lastID = Level.Game.CurrentID;
 
-    if (Level.Game.CurrentID > cache.length) cache.length = Level.Game.CurrentID+1; // make cache larger
+    if (lastID > cache.length) cache.length = lastID+1; // make cache larger
     magicint = Rand(MaxInt);
-    ts = Timestamp();
 
     for( C = Level.ControllerList; C != None; C = C.NextController )
     {
@@ -81,19 +80,18 @@ function CheckPlayerList()
         ipstr = PC.GetPlayerNetworkAddress();
         if (ipstr != "")
         {
-            if (PC.PlayerReplicationInfo.bOnlySpectator) typemsg = "SPECTATOR";
-            else typemsg = "PLAYER";
-
             if (cache[pLoc].ip != ipstr)
             {
+                if (ts == "") ts = Timestamp();
                 cache[pLoc].spec = PC.PlayerReplicationInfo.bOnlySpectator;
                 cache[pLoc].ip = ipstr;
                 cache[pLoc].name = PC.PlayerReplicationInfo.PlayerName;
-                LogLine("["$typemsg$"_JOIN] "$ts$chr(9)$PC.PlayerReplicationInfo.PlayerName$chr(9)$ipstr$chr(9)$PC.Player.CurrentNetSpeed$chr(9)$PC.GetPlayerIDHash());
+                LogLine("["$Eval(cache[pLoc].spec,"SPECTATOR","PLAYER")$"_JOIN] "$ts$chr(9)$PC.PlayerReplicationInfo.PlayerName$chr(9)$ipstr$chr(9)$PC.Player.CurrentNetSpeed$chr(9)$PC.GetPlayerIDHash());
             }
             else if (cache[pLoc].name != PC.PlayerReplicationInfo.PlayerName)
             {
-                LogLine("["$typemsg$"_NAME_CHANGE] "$ts$chr(9)$cache[pLoc].name$chr(9)$PC.PlayerReplicationInfo.PlayerName);
+                if (ts == "") ts = Timestamp();
+                LogLine("["$Eval(cache[pLoc].spec,"SPECTATOR","PLAYER")$"_NAME_CHANGE] "$ts$chr(9)$cache[pLoc].name$chr(9)$PC.PlayerReplicationInfo.PlayerName);
                 cache[pLoc].name = PC.PlayerReplicationInfo.PlayerName;
             }
             cache[pLoc].magic = magicint;
@@ -105,10 +103,9 @@ function CheckPlayerList()
     {
         if ((cache[pLoc].magic != magicint) && (cache[pLoc].magic > -1) && (cache[pLoc].ip != ""))
         {
+            if (ts == "") ts = Timestamp();
             cache[pLoc].magic = -1;
-            if (cache[pLoc].spec) typemsg = "SPECTATOR";
-            else typemsg = "PLAYER";
-            LogLine("["$typemsg$"_PART] "$ts$chr(9)$cache[pLoc].name);
+            LogLine("["$Eval(cache[pLoc].spec,"SPECTATOR","PLAYER")$"_PART] "$ts$chr(9)$cache[pLoc].name);
         }
     }
 }

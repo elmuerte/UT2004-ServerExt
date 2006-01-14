@@ -2,11 +2,11 @@
     RSS Feed Mutator                                                    <br />
     ServerAdsSE like mutator that feeds of RSS feeds                    <br />
 
-    (c) 2004, Michiel "El Muerte" Hendriks                              <br />
+    (c) 2004-2006, Michiel "El Muerte" Hendriks                         <br />
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: MutRSS.uc,v 1.26 2005/12/28 14:46:09 elmuerte Exp $ -->
+    <!-- $Id: MutRSS.uc,v 1.27 2006/01/14 15:45:02 elmuerte Exp $ -->
 *******************************************************************************/
 
 class MutRSS extends Mutator config;
@@ -111,6 +111,8 @@ var localized string piDesc[15],piHelp[15];
 var localized string piOpt[2];
 var localized string msgHelp[5], msgAdminHelp[7];
 
+var ServerExtDummyPlayer DummyPC;
+
 event PreBeginPlay()
 {
     SPACE_REPLACE = chr(27); // ESC
@@ -127,7 +129,6 @@ event PreBeginPlay()
         return;
     }
     InitRSS();
-    LoadWebAdmin();
     if (bBrowserEnabled && (int(Level.EngineVersion) > 3195))
     {
         AddToPackageMap(ClientSidePackageRSS);
@@ -138,6 +139,12 @@ event PreBeginPlay()
 event PostBeginPlay()
 {
     if (bBroadcastEnabled && bInitialBroadcast) Timer();
+    LoadWebAdmin();
+    if (Level.Game.BroadcastHandler.IsA('UT2VoteChatHandler'))
+    {
+        DummyPC = spawn(class'ServerExtDummyPlayer');
+        Log("Spawning UT2Vote fix PlayerController for MutRSS", name);
+    }
 }
 
 function LoadWebAdmin()
@@ -161,7 +168,7 @@ function LoadWebAdmin()
         }
         return;
     }
-    for (i = 0; i < webadmin.QueryHandlerClasses.Length-1; i++)
+    for (i = 0; i < webadmin.QueryHandlerClasses.Length; i++)
     {
         if (webadmin.QueryHandlerClasses[i] == WebQueryHandler) break;
     }
@@ -297,7 +304,7 @@ function RSSConnectionTimeout(HttpSock sender)
 function SendMessage(coerce string Message, optional PlayerController Receiver)
 {
     if (Receiver != none) Receiver.TeamMessage(none, Message, 'None');
-    else level.Game.BroadcastHandler.Broadcast(none, Message);
+    else level.Game.BroadcastHandler.Broadcast(DummyPC, Message);
 }
 
 /**

@@ -6,7 +6,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: ServQuery.uc,v 1.4 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: ServQuery.uc,v 1.5 2006/01/14 15:45:02 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ServQuery extends UdpGameSpyQuery;
@@ -205,7 +205,8 @@ function string GetPlayerDetails( Controller P, int PlayerNum )
     ResultSet = ResultSet$"\\carries_"$PlayerNum$"\\"$(P.PlayerReplicationInfo.HasFlag != none);
     // number of lives
     // lives bug workaround
-    RealLives = round(Level.Game.MaxLives - P.PlayerReplicationInfo.Deaths);
+    //RealLives = round(Level.Game.MaxLives - P.PlayerReplicationInfo.Deaths);
+    RealLives = round(Level.Game.MaxLives - P.PlayerReplicationInfo.NumLives);
     if (RealLives < 0) RealLives = 0;
     ResultSet = ResultSet$"\\lives_"$PlayerNum$"\\"$RealLives;
     // time playing ...
