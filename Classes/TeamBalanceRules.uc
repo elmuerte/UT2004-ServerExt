@@ -2,11 +2,11 @@
     Team balancer game rules to check for additional unbalanced teams
     issues                                                              <br />
 
-    (c) 2004, Michiel "El Muerte" Hendriks                              <br />
+    (c) 2004-2006 Michiel "El Muerte" Hendriks                          <br />
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: TeamBalanceRules.uc,v 1.3 2004/10/20 14:03:03 elmuerte Exp $ -->
+    <!-- $Id: TeamBalanceRules.uc,v 1.4 2006/02/12 19:35:45 elmuerte Exp $ -->
 *******************************************************************************/
 class TeamBalanceRules extends GameRules;
 
@@ -25,7 +25,7 @@ function NavigationPoint FindPlayerStart( Controller Player, optional byte InTea
     {
         if (mutTB.bDebug) log("DEBUG: FindPlayerStart in subrequest", name);
         bSubReq = false;
-        return none;
+        return super.FindPlayerStart(Player, InTeam, incomingName);
     }
     if (Player == none || PlayerController(Player) == none) return super.FindPlayerStart(Player, InTeam, incomingName);
     if (mutTB.PCTeamSwitch(PlayerController(Player)))
@@ -37,6 +37,6 @@ function NavigationPoint FindPlayerStart( Controller Player, optional byte InTea
         bSubReq = false;
         return res;
     }
-    else return none;
+    else return super.FindPlayerStart(Player, InTeam, incomingName);
 }
 

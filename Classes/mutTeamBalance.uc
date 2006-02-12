@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: mutTeamBalance.uc,v 1.10 2006/01/06 20:32:06 elmuerte Exp $ -->
+    <!-- $Id: mutTeamBalance.uc,v 1.11 2006/02/12 19:35:45 elmuerte Exp $ -->
 *******************************************************************************/
 class mutTeamBalance extends Mutator;
 
@@ -251,7 +251,7 @@ function bool PCTeamSwitch(PlayerController PC)
             else {
                 if (!IsSmallest(TeamRecords[i].PC.PlayerReplicationInfo.Team.TeamIndex))
                 {
-                    if (bDebug) log("DEBUG: force player to old team", name);
+                    if (bDebug) log("DEBUG: force player to old team: "$PC.PlayerReplicationInfo.Team.TeamIndex$" -> "$TeamRecords[i].Team, name);
                     TeamRecords[i].PC.ServerChangeTeam(TeamRecords[i].Team);
                     return true;
                 }

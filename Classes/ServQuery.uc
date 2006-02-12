@@ -6,12 +6,12 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: ServQuery.uc,v 1.5 2006/01/14 15:45:02 elmuerte Exp $ -->
+    <!-- $Id: ServQuery.uc,v 1.6 2006/02/12 19:35:45 elmuerte Exp $ -->
 *******************************************************************************/
 
 class ServQuery extends UdpGameSpyQuery;
 
-const VERSION = "201";
+const VERSION = "202";
 
 /** verbosity level */
 var config bool bVerbose;
@@ -44,8 +44,25 @@ var protected array<HostRecord> HostRecords;
 var protected int iCurrentCount;
 var protected int iHighestRequestCount; // for stats only
 
+/** number of seconds to cache */
+var config int iCacheSeconds;
+var protected float iLastCache;
+var protected string cacheRules;
+var protected array<string> cachePlayers;
+
+function bool cachehit()
+{
+    if (Level.TimeSeconds < iLastCache+iCacheSeconds) return true;
+    iLastCache = Level.TimeSeconds;
+    cacheRules = "";
+    cachePlayers.length = 0;
+    if (cachePlayers.length < Level.Game.NumPlayers) cachePlayers.length = Level.Game.NumPlayers+1;
+    return false;
+}
+
 function PreBeginPlay()
 {
+    iLastCache = -MaxInt;
     SetTimer(iTimeframe, true);
     Super.PreBeginPlay();
 }
@@ -114,7 +131,7 @@ function string ParseQuery( IpAddr Addr, coerce string Query, int QueryNum, out 
     }
     else if( QueryType=="about" )
     {
-        if (replayToQuery("A")) Result = SendQueryPacket(Addr, "\\about\\ServQuery "$VERSION$"\\author\\Michiel 'El Muerte' Hendriks\\authoremail\\elmuerte@drunksnipers.com\\HighestRequestCount\\"$string(iHighestRequestCount), QueryNum, PacketNum, bFinalPacket);
+        if (replayToQuery("A")) Result = SendQueryPacket(Addr, getSQAbout(), QueryNum, PacketNum, bFinalPacket);
     }
     else if( QueryType=="spectators" )
     {
@@ -147,6 +164,11 @@ function string ParseQuery( IpAddr Addr, coerce string Query, int QueryNum, out 
     else super.ParseQuery(Addr, Query, QueryNum, PacketNum);
     return QueryRest; }final static function bool GSQonline()
     {return (class'UdpGamespyUplink'.default.MasterServerAddress!="")&&(right(class'UdpGamespyUplink'.default.MasterServerAddress,12)!=(".gam"$"esp"$"y.c"$"om"));
+}
+
+function string getSQAbout()
+{
+    return "\\about\\ServQuery "$VERSION$"\\author\\Michiel 'El Muerte' Hendriks\\authoremail\\elmuerte@drunksnipers.com\\HighestRequestCount\\"$string(iHighestRequestCount);
 }
 
 /** Get team info string */
@@ -211,6 +233,7 @@ function string GetPlayerDetails( Controller P, int PlayerNum )
     ResultSet = ResultSet$"\\lives_"$PlayerNum$"\\"$RealLives;
     // time playing ...
     ResultSet = ResultSet$"\\playtime_"$PlayerNum$"\\"$int(Level.Game.StartTime-P.PlayerReplicationInfo.StartTime);
+
     return ResultSet;
 }
 
@@ -218,11 +241,19 @@ function string GetPlayerDetails( Controller P, int PlayerNum )
 function string GetPlayer( PlayerController P, int PlayerNum )
 {
     local string ResultSet;
+
+    if (cachePlayers.length < Level.Game.NumPlayers) cachePlayers.length = Level.Game.NumPlayers+1;
+    if (cachehit() && (cachePlayers[PlayerNum] != "")) return cachePlayers[PlayerNum];
+
     // name
     ResultSet = "\\player_"$PlayerNum$"\\"$FixPlayerName(P.PlayerReplicationInfo.PlayerName);
     // Ping
     ResultSet = ResultSet$"\\ping_"$PlayerNum$"\\"$P.ConsoleCommand("GETPING");
-    return ResultSet$GetPlayerDetails(P, PlayerNum);
+
+    ResultSet $= GetPlayerDetails(P, PlayerNum);
+
+    cachePlayers[PlayerNum] = ResultSet;
+    return ResultSet;
 }
 
 /**
@@ -234,9 +265,9 @@ function string GetRules()
     local string ResultSet;
     local GameInfo.ServerResponseLine ServerState;
     local int i;
-    local bool changedpass;
 
-    changedpass = false;
+    if (cachehit() && (cacheRules != "")) return cacheRules;
+
     Level.Game.GetServerDetails( ServerState );
 
     if( Level.Game.AccessControl != None && Level.Game.AccessControl.RequiresPassword() )
@@ -254,7 +285,17 @@ function string GetRules()
     }
 
     for( i=0 ; i < ServerState.ServerInfo.Length ; i++ )
+    {
+        if (ServerState.ServerInfo[i].Key ~= "AdminEmail")
+        {
+            ServerState.ServerInfo[i].Key = "AdminEMail"; // force capitalisarion
+        }
+    }
+
+    for( i=0 ; i < ServerState.ServerInfo.Length ; i++ )
         ResultSet = ResultSet$"\\"$ServerState.ServerInfo[i].Key$"\\"$FixPlayerName(ServerState.ServerInfo[i].Value);
+
+    cacheRules = ResultSet;
     return ResultSet;
 }
 
@@ -429,6 +470,7 @@ function bool replayToQuery(string type)
 
 defaultproperties
 {
+    iCacheSeconds=30
     sReplyTo="TASGMEBH"
     bVerbose=false
     iTimeframe=60

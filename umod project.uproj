@@ -28,10 +28,10 @@ versionURL=http://unreal.epicgames.com/
 developerURL=http://www.epicgames.com/
 [Product]
 product=ServerExt
-version=109
+version=110
 developer=Michiel "El Muerte" Hendriks
 productURL=http://ut2004.elmuerte.com/ServerExt
-versionURL=http://ut2004.elmuerte.com/files/ServerExt-v109-ut4mod.zip
+versionURL=http://ut2004.elmuerte.com/files/ServerExt-v110-ut4mod.zip
 developerURL=http://ut2004.elmuerte.com/
 readme=Help\ServerExt.html
 title=ServerExt Setup
