@@ -5,7 +5,7 @@
     Released under the Open Unreal Mod License                          <br />
     http://wiki.beyondunreal.com/wiki/OpenUnrealModLicense
 
-    <!-- $Id: ResSltMut.uc,v 1.4 2005/12/05 10:06:08 elmuerte Exp $ -->
+    <!-- $Id: ResSltMut.uc,v 1.5 2006/02/17 15:57:28 elmuerte Exp $ -->
 *******************************************************************************/
 class ResSltMut extends Mutator cacheexempt;
 
@@ -17,7 +17,7 @@ function NotifyLogout(Controller Exiting)
     {
         if (Level.Game.NumPlayers < Level.Game.MaxPlayers)
         {
-            Level.Game.MaxPlayers = Level.Game.NumPlayers;
+            Level.Game.MaxPlayers = Max(Level.Game.NumPlayers, Level.Game.default.MaxPlayers);
         }
     }
     // check spectators
@@ -25,7 +25,7 @@ function NotifyLogout(Controller Exiting)
     {
         if (Level.Game.NumSpectators < Level.Game.MaxSpectators)
         {
-            Level.Game.MaxSpectators = Level.Game.NumSpectators;
+            Level.Game.MaxSpectators = Max(Level.Game.NumSpectators, Level.Game.default.MaxSpectators);
         }
     }
     if (ReservedSlots(Level.Game.AccessControl) != none) ReservedSlots(Level.Game.AccessControl).NotifyLogout(Exiting);
